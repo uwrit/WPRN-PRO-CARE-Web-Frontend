@@ -5,11 +5,14 @@
 //
 // SPDX-License-Identifier: MIT
 //
+import { Home } from 'lucide-react'
+import { PageTitle } from '@/packages/design-system/src/molecules/DashboardLayout'
+import { DashboardLayout } from './DashboardLayout'
 
 const DashboardPage = () => (
-  <div className="text-center">
+  <DashboardLayout title={<PageTitle title="Home" icon={<Home />} />}>
     <h1 className="text-2xl">Dashboard</h1>
-  </div>
+  </DashboardLayout>
 )
 
 export default DashboardPage

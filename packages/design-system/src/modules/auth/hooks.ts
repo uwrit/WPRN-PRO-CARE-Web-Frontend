@@ -15,11 +15,15 @@ import { useEffect, useState } from 'react'
  * */
 export const useRegisterAuthServiceWorker = (
   firebaseOptions: FirebaseOptions,
+  emulate = false,
 ) => {
   useEffect(() => {
     if ('serviceWorker' in navigator) {
       const serializedFirebaseConfig = encodeURIComponent(
-        JSON.stringify(firebaseOptions),
+        JSON.stringify({
+          ...firebaseOptions,
+          emulate,
+        }),
       )
       const serviceWorkerUrl = `/authServiceWorker.js?firebaseConfig=${serializedFirebaseConfig}`
 
@@ -29,7 +33,7 @@ export const useRegisterAuthServiceWorker = (
         )
       })
     }
-  }, [firebaseOptions])
+  }, [emulate, firebaseOptions])
 }
 
 /**
