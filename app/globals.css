@@ -7,6 +7,7 @@ SPDX-FileCopyrightText: 2023 Stanford University and the project authors (see CO
 SPDX-License-Identifier: MIT
 
 */
+@import '../packages/design-system/src/main.css';
 
 @tailwind base;
 @tailwind components;
@@ -24,7 +25,7 @@ SPDX-License-Identifier: MIT
 
 @layer components {
   .focus-ring {
-    @apply ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
+    @apply ring-offset-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
   }
 }
 

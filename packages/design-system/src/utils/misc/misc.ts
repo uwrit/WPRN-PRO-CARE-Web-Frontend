@@ -6,10 +6,12 @@
 // SPDX-License-Identifier: MIT
 //
 
-const DashboardPage = () => (
-  <div className="text-center">
-    <h1 className="text-2xl">Dashboard</h1>
-  </div>
-)
+/**
+ * Negates value
+ * Useful for functional patterns and state callbacks
+ * */
+export const not = <T>(value: T) => !value
 
-export default DashboardPage
+export type InitialState<T> = T | (() => T)
+
+export type Nil<T> = T | null | undefined

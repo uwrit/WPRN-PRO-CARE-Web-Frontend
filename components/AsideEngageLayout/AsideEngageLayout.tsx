@@ -6,6 +6,7 @@
 // SPDX-License-Identifier: MIT
 //
 import Image from 'next/image'
+import { LogoType } from '@/components/icons/LogoType'
 import {
   type AsideBrandLayoutProps,
   AsideBrandLayout,
@@ -17,9 +18,7 @@ export const AsideEngageLayout = (
   <AsideBrandLayout
     aside={
       <>
-        <h2 className="text-6xl font-light tracking-widest text-primary">
-          ENGAGE-HF
-        </h2>
+        <LogoType className="h-auto w-80 text-primary" />
         <Image
           src="/stanfordbiodesign.png"
           alt="Stanford Biodesign Logo"

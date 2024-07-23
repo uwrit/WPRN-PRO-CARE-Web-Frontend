@@ -5,11 +5,13 @@
 //
 // SPDX-License-Identifier: MIT
 //
+import { not } from './misc'
 
-const DashboardPage = () => (
-  <div className="text-center">
-    <h1 className="text-2xl">Dashboard</h1>
-  </div>
-)
-
-export default DashboardPage
+describe('not', () => {
+  it('negates value', () => {
+    expect(not(true)).toBe(false)
+    expect(not(false)).toBe(true)
+    expect(not('')).toBe(true)
+    expect(not(5)).toBe(false)
+  })
+})

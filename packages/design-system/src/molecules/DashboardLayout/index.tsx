@@ -5,11 +5,8 @@
 //
 // SPDX-License-Identifier: MIT
 //
-
-const DashboardPage = () => (
-  <div className="text-center">
-    <h1 className="text-2xl">Dashboard</h1>
-  </div>
-)
-
-export default DashboardPage
+'use client'
+export * from './DashboardLayout'
+export * from './MenuItem'
+export * from './PageTitle'
+export * from './UserMenuItem'
