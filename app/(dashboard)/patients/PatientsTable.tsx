@@ -7,45 +7,24 @@
 //
 'use client'
 import { createColumnHelper } from '@tanstack/table-core'
-import { Pencil, Trash } from 'lucide-react'
-import { CopyText } from '@/packages/design-system/src/components/CopyText'
-import {
-  DataTable,
-  RowDropdownMenu,
-} from '@/packages/design-system/src/components/DataTable'
-import { DropdownMenuItem } from '@/packages/design-system/src/components/DropdownMenu'
+import { useMemo } from 'react'
+import { useUser } from '@/modules/firebase/UserProvider'
+import { UserType } from '@/modules/firebase/utils'
+import { createSharedUserColumns, userColumnIds } from '@/modules/user/table'
+import { DataTable } from '@/packages/design-system/src/components/DataTable'
 import type { Patient } from './page'
+import { PatientMenu } from './PatientMenu'
 
 const columnHelper = createColumnHelper<Patient>()
-
+const userColumns = createSharedUserColumns<Patient>()
 const columns = [
-  columnHelper.accessor('uid', {
-    header: 'Id',
-    cell: (props) => (
-      <CopyText className="max-w-[7rem]">{props.getValue()}</CopyText>
-    ),
-  }),
-  columnHelper.accessor('displayName', {
-    header: 'Name',
-    cell: (props) => props.getValue() ?? '-',
-  }),
-  columnHelper.accessor('email', { header: 'Email' }),
-  columnHelper.accessor('gender', { header: 'Gender' }),
+  userColumns.id,
+  userColumns.displayName,
+  userColumns.email,
+  userColumns.organization,
   columnHelper.display({
     id: 'actions',
-    cell: () => (
-      //   TODO: Actions
-      <RowDropdownMenu>
-        <DropdownMenuItem>
-          <Pencil />
-          Edit
-        </DropdownMenuItem>
-        <DropdownMenuItem>
-          <Trash />
-          Delete
-        </DropdownMenuItem>
-      </RowDropdownMenu>
-    ),
+    cell: (props) => <PatientMenu patient={props.row.original} />,
   }),
 ]
 
@@ -53,6 +32,16 @@ interface PatientsDataTableProps {
   data: Patient[]
 }
 
-export const PatientsTable = ({ data }: PatientsDataTableProps) => (
-  <DataTable columns={columns} data={data} entityName="patients" />
-)
+export const PatientsTable = ({ data }: PatientsDataTableProps) => {
+  const user = useUser()
+  const visibleColumns = useMemo(
+    () =>
+      user.user.type === UserType.admin ?
+        columns
+      : columns.filter((column) => column.id !== userColumnIds.organization),
+    [user.user.type],
+  )
+  return (
+    <DataTable columns={visibleColumns} data={data} entityName="patients" />
+  )
+}

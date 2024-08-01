@@ -5,58 +5,78 @@
 //
 // SPDX-License-Identifier: MIT
 //
-import { getDocs, query, where } from 'firebase/firestore'
-import { Contact } from 'lucide-react'
-import { getAuthenticatedOnlyApp, getUserRole } from '@/modules/firebase/guards'
-import { Role } from '@/modules/firebase/role'
-import { mapUserData } from '@/modules/firebase/user'
+import { query, where } from 'firebase/firestore'
+import { Contact, UserPlus } from 'lucide-react'
+import Link from 'next/link'
+import {
+  getAuthenticatedOnlyApp,
+  getCurrentUserType,
+} from '@/modules/firebase/guards'
+import { mapAuthData } from '@/modules/firebase/user'
+import { getDocData, getDocsData, UserType } from '@/modules/firebase/utils'
+import { routes } from '@/modules/routes'
+import {
+  getNonAdminInvitations,
+  getUserOrganizationsMap,
+  parseAuthToUser,
+  parseInvitationToUser,
+} from '@/modules/user/queries'
+import { Button } from '@/packages/design-system/src/components/Button'
 import { PageTitle } from '@/packages/design-system/src/molecules/DashboardLayout'
 import { PatientsTable } from './PatientsTable'
 import { DashboardLayout } from '../DashboardLayout'
 
-const getPatientsQuery = async () => {
+const getData = async () => {
+  const { refs, currentUser, docRefs } = await getAuthenticatedOnlyApp()
+  const user = await getDocData(docRefs.user(currentUser.uid))
+  const organizationId = user?.organization
+  if (!organizationId)
+    throw new Error('Clinician/owner without organization id')
+  return {
+    patientsQuery: query(
+      refs.users(),
+      where('organization', '==', organizationId),
+    ),
+    invitationsQuery: await getNonAdminInvitations([organizationId]),
+  }
+}
+
+const getAdminData = async () => {
   const { refs } = await getAuthenticatedOnlyApp()
-  const userRole = await getUserRole()
-  if (userRole.role === Role.admin) return refs.users()
-  if (userRole.role === Role.owner) {
-    const organizationIds = userRole.organizations.docs.map((doc) => doc.id)
-    return query(refs.users(), where('organization', 'in', organizationIds))
+  return {
+    patientsQuery: refs.users(),
+    invitationsQuery: refs.invitations(),
   }
-  if (userRole.role === Role.clinician) {
-    const organizationId = userRole.clinician.data().organization
-    if (!organizationId) {
-      // TODO: Check if there is any reason for organization not to be defined
-      throw new Error('')
-    }
-    return query(refs.users(), where('organization', '==', organizationId))
-  }
-  // Other roles can't reach this point, so this should never execute
-  throw new Error()
 }
 
 const listPatients = async () => {
-  const patientsQuery = await getPatientsQuery()
-  const patients = await getDocs(patientsQuery)
-  const userIdsToGet = patients.docs.map((patient) => patient.id)
-  const patientsById = new Map(
-    patients.docs.map(
-      (patient) => [patient.id, { id: patient.id, ...patient.data() }] as const,
-    ),
+  const userRole = await getCurrentUserType()
+  const { patientsQuery, invitationsQuery } =
+    userRole === UserType.admin ? await getAdminData() : await getData()
+  const patients = await getDocsData(
+    query(patientsQuery, where('type', '==', UserType.patient)),
   )
 
-  return mapUserData(userIdsToGet, (authData, id) => {
-    const patient = patientsById.get(id)
-    if (!patient) {
-      console.error(`No patient found for user id ${id}`)
-      return null
-    }
-    return {
-      uid: id,
-      email: authData.email,
-      displayName: authData.displayName,
-      gender: patient.GenderIdentityKey,
-    }
-  })
+  const userIds = patients.map((patient) => patient.id)
+  const organizationMap = await getUserOrganizationsMap()
+
+  const invitations = await getDocsData(
+    query(invitationsQuery, where('user.type', '==', UserType.patient)),
+  )
+
+  const patientsData = await mapAuthData(
+    { userIds, includeUserData: true },
+    ({ auth, user }, id) => ({
+      ...parseAuthToUser(id, auth),
+      organization: organizationMap.get(user?.organization ?? ''),
+    }),
+  )
+
+  const invitedUsers = invitations.map((invitation) =>
+    parseInvitationToUser(invitation, organizationMap),
+  )
+
+  return [...invitedUsers, ...patientsData]
 }
 
 export type Patient = Awaited<ReturnType<typeof listPatients>>[number]
@@ -65,7 +85,17 @@ const PatientsPage = async () => {
   const patients = await listPatients()
 
   return (
-    <DashboardLayout title={<PageTitle title="Patients" icon={<Contact />} />}>
+    <DashboardLayout
+      title={<PageTitle title="Patients" icon={<Contact />} />}
+      actions={
+        <Button asChild>
+          <Link href={routes.patients.invite}>
+            <UserPlus />
+            Invite Patient
+          </Link>
+        </Button>
+      }
+    >
       <PatientsTable data={patients} />
     </DashboardLayout>
   )

@@ -5,9 +5,7 @@
 //
 // SPDX-License-Identifier: MIT
 //
-export enum Role {
-  admin = 'admin',
-  owner = 'owner', // owner of organization
-  clinician = 'clinician',
-  user = 'user', // patient
-}
+import { type UserType } from '@/modules/firebase/utils'
+import { upperFirst } from '@/packages/design-system/src/utils/misc'
+
+export const stringifyType = (type: UserType) => upperFirst(type)

@@ -8,5 +8,15 @@
 
 export const routes = {
   home: '/',
+  users: {
+    index: '/users',
+    user: (userId: string) => `/users/${userId}`,
+    invite: '/users/invite',
+  },
+  patients: {
+    index: '/patients',
+    patient: (patientId: string) => `/patients/${patientId}`,
+    invite: '/patients/invite',
+  },
   signIn: '/sign-in',
 }

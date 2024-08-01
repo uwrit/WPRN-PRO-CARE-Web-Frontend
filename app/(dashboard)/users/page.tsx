@@ -5,93 +5,96 @@
 //
 // SPDX-License-Identifier: MIT
 //
-import { getDocs, query, type QuerySnapshot, where } from 'firebase/firestore'
-import { Users } from 'lucide-react'
+import { query, where } from 'firebase/firestore'
+import { UserPlus, Users } from 'lucide-react'
+import Link from 'next/link'
+import { allowTypes, getAuthenticatedOnlyApp } from '@/modules/firebase/guards'
+import { mapAuthData } from '@/modules/firebase/user'
+import { getDocsData, UserType } from '@/modules/firebase/utils'
+import { routes } from '@/modules/routes'
 import {
-  allowRoles,
-  getAuthenticatedOnlyApp,
-  getUserRole,
-} from '@/modules/firebase/guards'
-import { Role } from '@/modules/firebase/role'
-import { mapUserData } from '@/modules/firebase/user'
-import { type Organization } from '@/modules/firebase/utils'
+  getUserOrganizationsMap,
+  parseAuthToUser,
+  parseInvitationToUser,
+} from '@/modules/user/queries'
+import { Button } from '@/packages/design-system/src/components/Button'
 import { PageTitle } from '@/packages/design-system/src/molecules/DashboardLayout'
 import { UsersTable } from './UsersTable'
 import { DashboardLayout } from '../DashboardLayout'
 
 const getAdminData = async () => {
   const { refs } = await getAuthenticatedOnlyApp()
-  const admins = await getDocs(refs.admins())
-  const organizations = await getDocs(refs.organizations())
-
-  const adminIds = new Set(admins.docs.map((admin) => admin.id))
 
   return {
-    adminIds,
-    organizations,
-    cliniciansQuery: refs.clinicians(),
+    usersQuery: refs.users(),
+    invitationsQuery: refs.invitations(),
   }
 }
 
-const getOwnerData = async (organizations: QuerySnapshot<Organization>) => {
-  const { refs } = await getAuthenticatedOnlyApp()
-  const organizationIds = organizations.docs.map(
-    (organization) => organization.id,
-  )
-  const cliniciansQuery = query(
-    refs.clinicians(),
-    where('organization', 'in', organizationIds),
-  )
+const getOwnerData = async () => {
+  const { refs, user } = await getAuthenticatedOnlyApp()
 
+  if (!user.organization) throw new Error('User without organization')
   return {
-    adminIds: new Set<string>(),
-    organizations,
-    cliniciansQuery,
+    usersQuery: query(
+      refs.users(),
+      where('organization', '==', user.organization),
+    ),
+    invitationsQuery: query(
+      refs.invitations(),
+      where('user.organization', '==', user.organization),
+    ),
   }
 }
 
 const listUsers = async () => {
-  const role = await getUserRole()
-  const { adminIds, organizations, cliniciansQuery } =
-    role.role === Role.admin ?
-      await getAdminData()
-      // Non-null assertion is fine here
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    : await getOwnerData(role.organizations!)
+  const { user } = await getAuthenticatedOnlyApp()
+  const { usersQuery, invitationsQuery } =
+    user.type === UserType.admin ? await getAdminData() : await getOwnerData()
 
-  const clinicians = await getDocs(cliniciansQuery)
-  const clinicianIds = new Set(clinicians.docs.map((clinician) => clinician.id))
+  const organizationMap = await getUserOrganizationsMap()
+  const invitations = await getDocsData(
+    query(invitationsQuery, where('user.type', '!=', UserType.patient)),
+  )
+  const usersData = await getDocsData(
+    query(usersQuery, where('type', '!=', UserType.patient)),
+  )
+  const userIds = usersData.map((user) => user.id)
 
-  const ownersIds = new Set(
-    organizations.docs.flatMap((organization) => organization.data().owners),
+  const users = await mapAuthData(
+    { userIds, includeUserData: true },
+    ({ auth, user }, id) => ({
+      ...parseAuthToUser(id, auth),
+      organization: organizationMap.get(user?.organization ?? ''),
+      type: user?.type,
+    }),
   )
 
-  const userIdsToGet = [
-    ...adminIds.values(),
-    ...clinicianIds.values(),
-    ...ownersIds.values(),
-  ]
+  const invitedUsers = invitations.map((invitation) =>
+    parseInvitationToUser(invitation, organizationMap),
+  )
 
-  return mapUserData(userIdsToGet, (authData, id) => ({
-    uid: id,
-    email: authData.email,
-    displayName: authData.displayName,
-    role:
-      adminIds.has(id) ? 'Admin'
-      : clinicianIds.has(id) ? 'Clinician'
-      : ownersIds.has(id) ? 'Owner'
-      : '-',
-  }))
+  return [...invitedUsers, ...users]
 }
 
 export type User = Awaited<ReturnType<typeof listUsers>>[number]
 
 const UsersPage = async () => {
-  await allowRoles([Role.admin, Role.owner])
+  await allowTypes([UserType.admin, UserType.owner])
   const users = await listUsers()
 
   return (
-    <DashboardLayout title={<PageTitle title="Users" icon={<Users />} />}>
+    <DashboardLayout
+      actions={
+        <Button asChild>
+          <Link href={routes.users.invite}>
+            <UserPlus />
+            Invite User
+          </Link>
+        </Button>
+      }
+      title={<PageTitle title="Users" icon={<Users />} />}
+    >
       <UsersTable data={users} />
     </DashboardLayout>
   )

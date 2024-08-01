@@ -6,64 +6,23 @@
 // SPDX-License-Identifier: MIT
 //
 import { type User } from '@firebase/auth-types'
-import {
-  connectFunctionsEmulator,
-  getFunctions,
-  httpsCallable,
-  type Functions,
-} from '@firebase/functions'
+import { connectFunctionsEmulator, getFunctions } from '@firebase/functions'
 import { type FirebaseOptions, initializeServerApp } from 'firebase/app'
 import { connectAuthEmulator, getAuth } from 'firebase/auth'
-import {
-  connectFirestoreEmulator,
-  doc,
-  type DocumentReference,
-  getDoc,
-  getDocs,
-  getFirestore,
-  query,
-  where,
-} from 'firebase/firestore'
+import { connectFirestoreEmulator, getFirestore } from 'firebase/firestore'
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { env } from '@/env'
 import { firebaseConfig } from '@/modules/firebase/config'
-import { Role } from '@/modules/firebase/role'
 import {
-  type Clinician,
-  collectionNames,
+  getCallables,
   getCollectionRefs,
+  getDocDataOrThrow,
+  getDocumentsRefs,
+  type UserType,
 } from '@/modules/firebase/utils'
 import { routes } from '@/modules/routes'
 
-interface Result<T> {
-  data?: T
-  error?: {
-    code: string
-    message: string
-  }
-}
-
-export interface UserAuthenticationInformation {
-  displayName?: string
-  email?: string
-  phoneNumber?: string
-  photoURL?: string
-}
-
-interface UserInformation {
-  auth: UserAuthenticationInformation
-}
-
-const getCallables = (functions: Functions) => ({
-  getUsersInformation: httpsCallable<
-    { userIds?: string[] },
-    Record<string, Result<UserInformation>>
-  >(functions, 'getUsersInformation'),
-})
-
-// it's mutable, because emulation should be triggerred once
-let enableEmulation = env.NEXT_PUBLIC_EMULATOR
 export const getServerApp = async (firebaseOptions: FirebaseOptions) => {
   const idToken = headers().get('Authorization')?.split('Bearer ').at(1)
 
@@ -73,16 +32,14 @@ export const getServerApp = async (firebaseOptions: FirebaseOptions) => {
   )
 
   const auth = getAuth(firebaseServerApp)
-  if (enableEmulation && !auth.emulatorConfig) {
-    connectAuthEmulator(auth, 'http://127.0.0.1:9099')
-  }
+  const enableEmulation = env.NEXT_PUBLIC_EMULATOR && !auth.emulatorConfig
+  if (enableEmulation) connectAuthEmulator(auth, 'http://127.0.0.1:9099')
   await auth.authStateReady()
 
   const db = getFirestore(firebaseServerApp)
   if (enableEmulation) connectFirestoreEmulator(db, '127.0.0.1', 8080)
   const functions = getFunctions(firebaseServerApp)
   if (enableEmulation) connectFunctionsEmulator(functions, '127.0.0.1', 5001)
-  enableEmulation = false
 
   return {
     firebaseServerApp,
@@ -91,50 +48,19 @@ export const getServerApp = async (firebaseOptions: FirebaseOptions) => {
     functions,
     callables: getCallables(functions),
     refs: getCollectionRefs(db),
+    docRefs: getDocumentsRefs(db),
   }
 }
 
-export const getUserRole = async () => {
-  const { currentUser, db, refs } = await getAuthenticatedOnlyApp()
-  const adminDocRef = doc(db, collectionNames.admins, currentUser.uid)
-  // Try-catches are necessary, because user might not have permissions to read collections
-  try {
-    const adminDoc = await getDoc(adminDocRef)
-    if (adminDoc.exists())
-      return {
-        role: Role.admin,
-      } as const
-  } catch (error) {}
+export const getUserRole = async (userId: string) => {
+  const { docRefs } = await getAuthenticatedOnlyApp()
+  const user = await getDocDataOrThrow(docRefs.user(userId))
+  return user.type
+}
 
-  const clinicianDocRef = doc(
-    db,
-    collectionNames.clinicians,
-    currentUser.uid,
-  ) as DocumentReference<Clinician>
-  try {
-    const clinicianDoc = await getDoc(clinicianDocRef)
-    if (clinicianDoc.exists())
-      return {
-        role: Role.clinician,
-        clinician: clinicianDoc,
-      } as const
-  } catch (error) {}
-
-  const organizationsRef = refs.organizations()
-  const organizationsQuery = query(
-    organizationsRef,
-    where('owners', 'array-contains-any', [currentUser.uid]),
-  )
-  try {
-    const organizationsDocs = await getDocs(organizationsQuery)
-    if (!organizationsDocs.empty)
-      return {
-        role: Role.owner as const,
-        organizations: organizationsDocs,
-      } as const
-  } catch (error) {}
-
-  return { role: Role.user } as const
+export const getCurrentUserType = async () => {
+  const { currentUser } = await getAuthenticatedOnlyApp()
+  return getUserRole(currentUser.uid)
 }
 
 /**
@@ -152,14 +78,17 @@ export const getUnauthenticatedOnlyApp = async () => {
 export const getAuthenticatedOnlyApp = async () => {
   const firebaseApp = await getServerApp(firebaseConfig)
   if (!firebaseApp.currentUser) redirect(routes.signIn)
-  return firebaseApp as typeof firebaseApp & { currentUser: User }
+  const { docRefs, currentUser } = firebaseApp
+  const user = await getDocDataOrThrow(docRefs.user(currentUser.uid))
+  const result = { ...firebaseApp, user }
+  return result as typeof result & { currentUser: User }
 }
 
 /**
  * Redirects to 403 if user's role d
  * */
-export const allowRoles = async (roles: Role[]) => {
-  const { role } = await getUserRole()
+export const allowTypes = async (types: UserType[]) => {
+  const type = await getCurrentUserType()
   // TODO: HTTP Error
-  if (!roles.includes(role)) redirect(routes.home)
+  if (!types.includes(type)) redirect(routes.home)
 }
