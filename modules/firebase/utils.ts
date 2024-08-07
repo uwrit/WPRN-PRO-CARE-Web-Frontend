@@ -16,6 +16,11 @@ import {
   getDocs,
   type Query,
 } from 'firebase/firestore'
+import {
+  type FHIRMedication,
+  type FHIRMedicationRequest,
+  type MedicationClass,
+} from '@/modules/firebase/models/medication'
 
 export interface Organization {
   id: string
@@ -68,7 +73,18 @@ export const collectionNames = {
   invitations: 'invitations',
   users: 'users',
   organizations: 'organizations',
+  medications: 'medications',
+  medicationClasses: 'medicationClasses',
+  drugs: 'drugs',
+  medicationRequests: 'medicationRequests',
 }
+
+export type ResourceType = 'invitation' | 'user'
+
+export const userPath = (resourceType: ResourceType) =>
+  resourceType === 'invitation' ?
+    collectionNames.invitations
+  : collectionNames.users
 
 export const getCollectionRefs = (db: Firestore) => ({
   users: () =>
@@ -83,6 +99,32 @@ export const getCollectionRefs = (db: Firestore) => ({
       db,
       collectionNames.organizations,
     ) as CollectionReference<Organization>,
+  medications: () =>
+    collection(
+      db,
+      collectionNames.medications,
+    ) as CollectionReference<FHIRMedication>,
+  drugs: (medicationId: string) =>
+    collection(
+      db,
+      `/${collectionNames.medications}/${medicationId}/${collectionNames.drugs}`,
+    ) as CollectionReference<FHIRMedication>,
+  medicationRequests: ({
+    userId,
+    resourceType,
+  }: {
+    userId: string
+    resourceType: ResourceType
+  }) =>
+    collection(
+      db,
+      `/${userPath(resourceType)}/${userId}/${collectionNames.medicationRequests}`,
+    ) as CollectionReference<FHIRMedicationRequest>,
+  medicationClasses: () =>
+    collection(
+      db,
+      collectionNames.medicationClasses,
+    ) as CollectionReference<MedicationClass>,
 })
 
 export const getDocumentsRefs = (db: Firestore) => ({
@@ -92,17 +134,29 @@ export const getDocumentsRefs = (db: Firestore) => ({
       User
     >,
   invitation: (...segments: string[]) =>
-    doc(
-      db,
-      collectionNames.invitations,
-      ...segments,
-    ) as DocumentReference<Invitation>,
+    doc(db, collectionNames.invitations, ...segments) as DocumentReference<
+      Invitation,
+      Invitation
+    >,
   organization: (...segments: string[]) =>
     doc(
       db,
       collectionNames.organizations,
       ...segments,
     ) as DocumentReference<Organization>,
+  medicationRequest: ({
+    userId,
+    medicationRequestId,
+    resourceType,
+  }: {
+    userId: string
+    medicationRequestId: string
+    resourceType: ResourceType
+  }) =>
+    doc(
+      db,
+      `/${userPath(resourceType)}/${userId}/${collectionNames.medicationRequests}/${medicationRequestId}`,
+    ) as DocumentReference<FHIRMedicationRequest>,
 })
 
 interface Result<T> {
