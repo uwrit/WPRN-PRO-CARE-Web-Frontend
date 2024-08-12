@@ -31,9 +31,10 @@ const InvitePatientPage = async () => {
         type: UserType.patient,
         clinician: form.clinician,
         organization: clinician.organization,
+        dateOfBirth: form.dateOfBirth?.toISOString(),
       },
     })
-    redirect(routes.patients.patient(result.data.code))
+    redirect(routes.patients.patient(result.data.id))
   }
 
   return (

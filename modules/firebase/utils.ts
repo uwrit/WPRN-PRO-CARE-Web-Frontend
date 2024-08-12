@@ -52,9 +52,9 @@ export enum UserType {
 
 export interface User {
   type: UserType
-  dateOfBirth?: Date
+  dateOfBirth?: string | null
   clinician?: string
-  dateOfEnrollment?: Date
+  dateOfEnrollment?: string
   invitationCode?: string
   messagesSettings?: UserMessagesSettings
   organization?: string
@@ -199,9 +199,10 @@ export const getCallables = (functions: Functions) => ({
         clinician?: string
         language?: string
         timeZone?: string
+        dateOfBirth?: string | null
       }
     },
-    { code: string }
+    { id: string }
   >(functions, 'createInvitation'),
   getUsersInformation: httpsCallable<
     GetUsersInformationInput,
