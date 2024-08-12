@@ -38,6 +38,7 @@ import {
 } from '@/packages/design-system/src/components/Tabs'
 import { getUserName } from '@/packages/design-system/src/modules/auth/user'
 import { PageTitle } from '@/packages/design-system/src/molecules/DashboardLayout'
+import { GenerateHealthSummary } from './GenerateHealthSummary'
 import { DashboardLayout } from '../../DashboardLayout'
 import { Medications, type MedicationsFormSchema } from '../Medications'
 
@@ -148,13 +149,22 @@ const PatientPage = async ({ params }: PatientPageProps) => {
     })
   }
 
+  const userName = getUserName(authUser) ?? ''
+
   return (
     <DashboardLayout
       title={
         <PageTitle
           title="Edit patient"
-          subTitle={getUserName(authUser)}
+          subTitle={userName}
           icon={<Contact />}
+        />
+      }
+      actions={
+        <GenerateHealthSummary
+          userId={userId}
+          resourceType={resourceType}
+          userName={userName}
         />
       }
     >

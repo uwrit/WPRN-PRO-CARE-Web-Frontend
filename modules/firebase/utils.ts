@@ -226,6 +226,12 @@ export const getCallables = (functions: Functions) => ({
     },
     undefined
   >(functions, 'updateUserInformation'),
+  exportHealthSummary: httpsCallable<
+    {
+      userId: string
+    },
+    { content: string }
+  >(functions, 'exportHealthSummary'),
 })
 
 export const getDocData = async <T>(reference: DocumentReference<T>) => {
