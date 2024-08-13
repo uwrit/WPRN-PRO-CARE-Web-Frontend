@@ -20,7 +20,9 @@ import {
   type FHIRMedication,
   type FHIRMedicationRequest,
   type MedicationClass,
+  type FHIRObservation,
 } from '@/modules/firebase/models/medication'
+import { strategy } from '@/packages/design-system/src/utils/misc'
 
 export interface Organization {
   id: string
@@ -77,14 +79,37 @@ export const collectionNames = {
   medicationClasses: 'medicationClasses',
   drugs: 'drugs',
   medicationRequests: 'medicationRequests',
+  creatinineObservations: 'creatinineObservations',
+  eGfrObservations: 'eGfrObservations',
+  potassiumObservations: 'potassiumObservations',
 }
 
 export type ResourceType = 'invitation' | 'user'
 
 export const userPath = (resourceType: ResourceType) =>
-  resourceType === 'invitation' ?
-    collectionNames.invitations
-  : collectionNames.users
+  strategy(
+    {
+      invitation: collectionNames.invitations,
+      user: collectionNames.users,
+    },
+    resourceType,
+  )
+
+export enum ObservationType {
+  creatinine = 'creatinine',
+  eGFR = 'eGFR',
+  potassium = 'potassium',
+}
+
+export const observationPath = (type: ObservationType) =>
+  strategy(
+    {
+      [ObservationType.creatinine]: collectionNames.creatinineObservations,
+      [ObservationType.eGFR]: collectionNames.eGfrObservations,
+      [ObservationType.potassium]: collectionNames.potassiumObservations,
+    },
+    type,
+  )
 
 export const getCollectionRefs = (db: Firestore) => ({
   users: () =>
@@ -125,6 +150,19 @@ export const getCollectionRefs = (db: Firestore) => ({
       db,
       collectionNames.medicationClasses,
     ) as CollectionReference<MedicationClass>,
+  userObservation: ({
+    userId,
+    resourceType,
+    observationType,
+  }: {
+    userId: string
+    resourceType: ResourceType
+    observationType: ObservationType
+  }) =>
+    collection(
+      db,
+      `/${userPath(resourceType)}/${userId}/${observationPath(observationType)}`,
+    ) as CollectionReference<FHIRObservation>,
 })
 
 export const getDocumentsRefs = (db: Firestore) => ({
@@ -157,6 +195,21 @@ export const getDocumentsRefs = (db: Firestore) => ({
       db,
       `/${userPath(resourceType)}/${userId}/${collectionNames.medicationRequests}/${medicationRequestId}`,
     ) as DocumentReference<FHIRMedicationRequest>,
+  userObservation: ({
+    userId,
+    resourceType,
+    observationType,
+    observationId,
+  }: {
+    userId: string
+    resourceType: ResourceType
+    observationType: ObservationType
+    observationId: string
+  }) =>
+    doc(
+      db,
+      `/${userPath(resourceType)}/${userId}/${observationPath(observationType)}/${observationId}`,
+    ) as DocumentReference<FHIRObservation>,
 })
 
 interface Result<T> {
