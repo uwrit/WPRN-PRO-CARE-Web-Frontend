@@ -6,6 +6,7 @@
 // SPDX-License-Identifier: MIT
 //
 
+import { startCase } from 'es-toolkit'
 import {
   type FHIRSimpleQuantity,
   type FHIRCodeableConcept,
@@ -37,6 +38,32 @@ export interface FHIRDosage extends FHIRElement {
   patientInstruction?: string
   timing?: FHIRTiming
   doseAndRate?: FHIRDosageDoseAndRate[]
+}
+
+export enum FHIRAllergyIntoleranceType {
+  allergy = 'allergy',
+  intolerance = 'intolerance',
+  financial = 'financial',
+  preference = 'preference',
+}
+
+export const stringifyIntoleranceType = (type: FHIRAllergyIntoleranceType) =>
+  startCase(type)
+
+export enum FHIRAllergyIntoleranceCriticality {
+  low = 'low',
+  high = 'high',
+  unableToAssess = 'unable-to-assess',
+}
+
+export const stringifyIntoleranceCriticality = (
+  criticality: FHIRAllergyIntoleranceCriticality | null,
+) => (criticality ? startCase(criticality) : '')
+
+export interface FHIRAllergyIntolerance {
+  type: FHIRAllergyIntoleranceType
+  criticality: FHIRAllergyIntoleranceCriticality | null
+  code: null
 }
 
 export interface FHIRDosageDoseAndRate extends FHIRElement {

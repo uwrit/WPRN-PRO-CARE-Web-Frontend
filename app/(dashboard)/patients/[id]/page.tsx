@@ -14,6 +14,7 @@ import {
   type PatientFormSchema,
 } from '@/app/(dashboard)/patients/PatientForm'
 import {
+  getAllergiesData,
   getFormProps,
   getLabsData,
   getMedicationsData,
@@ -39,6 +40,7 @@ import {
 } from '@/packages/design-system/src/components/Tabs'
 import { getUserName } from '@/packages/design-system/src/modules/auth/user'
 import { PageTitle } from '@/packages/design-system/src/molecules/DashboardLayout'
+import { Allergies } from './Allergies'
 import { GenerateHealthSummary } from './GenerateHealthSummary'
 import { Labs } from './Labs'
 import { DashboardLayout } from '../../DashboardLayout'
@@ -72,6 +74,7 @@ interface PatientPageProps {
 enum Tab {
   information = 'information',
   medications = 'medications',
+  allergies = 'allergies',
   labs = 'labs',
 }
 
@@ -179,6 +182,9 @@ const PatientPage = async ({ params }: PatientPageProps) => {
           <TabsTrigger value={Tab.medications} className="grow">
             Medications
           </TabsTrigger>
+          <TabsTrigger value={Tab.allergies} className="grow">
+            Allergies
+          </TabsTrigger>
           <TabsTrigger value={Tab.labs} className="grow">
             Labs
           </TabsTrigger>
@@ -199,6 +205,9 @@ const PatientPage = async ({ params }: PatientPageProps) => {
               medications: await getUserMedications({ userId, resourceType }),
             }}
           />
+        </TabsContent>
+        <TabsContent value={Tab.allergies}>
+          <Allergies {...await getAllergiesData({ userId, resourceType })} />
         </TabsContent>
         <TabsContent value={Tab.labs}>
           <Labs {...await getLabsData({ userId, resourceType })} />
