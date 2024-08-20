@@ -7,66 +7,65 @@
 //
 'use client'
 import { Pencil, Trash } from 'lucide-react'
-import { LabFormDialog } from '@/app/(dashboard)/patients/[id]/LabForm'
+import { AppointmentFormDialog } from '@/app/(dashboard)/patients/[id]/AppointmentForm'
 import {
-  deleteObservation,
-  updateObservation,
+  deleteAppointment,
+  updateAppointment,
 } from '@/app/(dashboard)/patients/actions'
-import { type Observation } from '@/app/(dashboard)/patients/utils'
+import { type Appointment } from '@/app/(dashboard)/patients/utils'
 import { type ResourceType } from '@/modules/firebase/utils'
 import { RowDropdownMenu } from '@/packages/design-system/src/components/DataTable'
 import { DropdownMenuItem } from '@/packages/design-system/src/components/DropdownMenu'
 import { ConfirmDeleteDialog } from '@/packages/design-system/src/molecules/ConfirmDeleteDialog'
 import { useOpenState } from '@/packages/design-system/src/utils/useOpenState'
 
-interface LabMenuProps {
+interface AppointmentMenuProps {
   userId: string
   resourceType: ResourceType
-  observation: Observation
+  appointment: Appointment
 }
 
-export const LabMenu = ({
+export const AppointmentMenu = ({
   userId,
   resourceType,
-  observation,
-}: LabMenuProps) => {
+  appointment,
+}: AppointmentMenuProps) => {
   const deleteConfirm = useOpenState()
-  const editObservation = useOpenState()
+  const editAppointment = useOpenState()
 
   const handleDelete = async () => {
-    await deleteObservation({
+    await deleteAppointment({
       userId,
       resourceType,
-      observationId: observation.id,
-      observationType: observation.type,
+      appointmentId: appointment.id,
     })
     deleteConfirm.close()
   }
 
   return (
     <>
-      <LabFormDialog
+      <AppointmentFormDialog
         onSubmit={async (data) => {
-          await updateObservation({
+          await updateAppointment({
             userId,
             resourceType,
-            observationId: observation.id,
+            appointmentId: appointment.id,
             ...data,
           })
-          editObservation.close()
+          editAppointment.close()
         }}
-        open={editObservation.isOpen}
-        onOpenChange={editObservation.setIsOpen}
-        observation={observation}
+        open={editAppointment.isOpen}
+        onOpenChange={editAppointment.setIsOpen}
+        appointment={appointment}
       />
       <ConfirmDeleteDialog
         open={deleteConfirm.isOpen}
         onOpenChange={deleteConfirm.setIsOpen}
-        entityName="lab"
+        entityName="observation"
         onDelete={handleDelete}
       />
       <RowDropdownMenu>
-        <DropdownMenuItem onClick={editObservation.open}>
+        <DropdownMenuItem onClick={editAppointment.open}>
           <Pencil />
           Edit
         </DropdownMenuItem>

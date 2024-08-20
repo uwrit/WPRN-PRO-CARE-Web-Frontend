@@ -9,45 +9,56 @@
 import { createColumnHelper } from '@tanstack/table-core'
 import { Plus } from 'lucide-react'
 import { useMemo } from 'react'
-import { LabFormDialog } from '@/app/(dashboard)/patients/[id]/LabForm'
-import { LabMenu } from '@/app/(dashboard)/patients/[id]/LabMenu'
-import { createObservation } from '@/app/(dashboard)/patients/actions'
-import type { LabsData, Observation } from '@/app/(dashboard)/patients/utils'
+import { AppointmentFormDialog } from '@/app/(dashboard)/patients/[id]/AppointmentForm'
+import { AppointmentMenu } from '@/app/(dashboard)/patients/[id]/AppointmentMenu'
+import { createAppointment } from '@/app/(dashboard)/patients/actions'
+import type {
+  AppointmentsData,
+  Appointment,
+} from '@/app/(dashboard)/patients/utils'
+import { stringifyAppointmentStatus } from '@/modules/firebase/models/medication'
 import { Button } from '@/packages/design-system/src/components/Button'
 import {
   DataTable,
   dateColumn,
+  dateTimeColumn,
 } from '@/packages/design-system/src/components/DataTable'
 import { useOpenState } from '@/packages/design-system/src/utils/useOpenState'
 
-interface LabsProps extends LabsData {}
+interface AppointmentsProps extends AppointmentsData {}
 
-const columnHelper = createColumnHelper<Observation>()
+const columnHelper = createColumnHelper<Appointment>()
 
-export const Labs = ({ observations, userId, resourceType }: LabsProps) => {
+export const Appointments = ({
+  appointments,
+  userId,
+  resourceType,
+}: AppointmentsProps) => {
   const createDialog = useOpenState()
 
   const columns = useMemo(
     () => [
-      columnHelper.accessor('effectiveDateTime', {
-        header: 'Date',
+      columnHelper.accessor('created', {
+        header: 'Created',
         cell: dateColumn,
       }),
-      columnHelper.accessor('type', {
-        header: 'Type',
+      columnHelper.accessor('status', {
+        header: 'Status',
+        cell: (props) => stringifyAppointmentStatus(props.getValue()),
       }),
-      columnHelper.accessor('value', {
-        header: 'Value',
-        cell: (props) => {
-          const observation = props.row.original
-          return `${observation.value} ${observation.unit}`
-        },
+      columnHelper.accessor('start', {
+        header: 'Start',
+        cell: dateTimeColumn,
+      }),
+      columnHelper.accessor('end', {
+        header: 'End',
+        cell: dateTimeColumn,
       }),
       columnHelper.display({
         id: 'actions',
         cell: (props) => (
-          <LabMenu
-            observation={props.row.original}
+          <AppointmentMenu
+            appointment={props.row.original}
             userId={userId}
             resourceType={resourceType}
           />
@@ -59,9 +70,9 @@ export const Labs = ({ observations, userId, resourceType }: LabsProps) => {
 
   return (
     <>
-      <LabFormDialog
+      <AppointmentFormDialog
         onSubmit={async (data) => {
-          await createObservation({
+          await createAppointment({
             userId,
             resourceType,
             ...data,
@@ -73,8 +84,8 @@ export const Labs = ({ observations, userId, resourceType }: LabsProps) => {
       />
       <DataTable
         columns={columns}
-        data={observations}
-        entityName="observations"
+        data={appointments}
+        entityName="appointments"
         header={
           <>
             <Button
@@ -84,7 +95,7 @@ export const Labs = ({ observations, userId, resourceType }: LabsProps) => {
               onClick={createDialog.open}
             >
               <Plus />
-              Add observation
+              Add appointment
             </Button>
           </>
         }
