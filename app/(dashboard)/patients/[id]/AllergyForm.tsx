@@ -8,13 +8,15 @@
 'use client'
 import { type ComponentProps } from 'react'
 import { z } from 'zod'
-import { type Allergy } from '@/app/(dashboard)/patients/utils'
+import { MedicationSelect } from '@/app/(dashboard)/patients/MedicationSelect'
 import {
-  FHIRAllergyIntoleranceCriticality,
-  FHIRAllergyIntoleranceType,
-  stringifyIntoleranceCriticality,
-  stringifyIntoleranceType,
-} from '@/modules/firebase/models/medication'
+  type Allergy,
+  type MedicationsData,
+} from '@/app/(dashboard)/patients/utils'
+import {
+  AllergyType,
+  stringifyAllergyType,
+} from '@/modules/firebase/models/allergy'
 import { Button } from '@/packages/design-system/src/components/Button'
 import {
   Dialog,
@@ -33,25 +35,28 @@ import { Field } from '@/packages/design-system/src/forms/Field'
 import { useForm } from '@/packages/design-system/src/forms/useForm'
 
 export const allergyFormSchema = z.object({
-  type: z.nativeEnum(FHIRAllergyIntoleranceType),
-  criticality: z.nativeEnum(FHIRAllergyIntoleranceCriticality),
+  medication: z.string(),
+  type: z.nativeEnum(AllergyType),
 })
 
 export type AllergyFormSchema = z.infer<typeof allergyFormSchema>
 
-interface AllergyFormProps {
+interface AllergyFormProps extends MedicationsData {
   allergy?: Allergy
   onSubmit: (data: AllergyFormSchema) => Promise<void>
 }
 
-export const AllergyForm = ({ allergy, onSubmit }: AllergyFormProps) => {
+export const AllergyForm = ({
+  allergy,
+  onSubmit,
+  medications,
+}: AllergyFormProps) => {
   const isEdit = !!allergy
   const form = useForm({
     formSchema: allergyFormSchema,
     defaultValues: {
-      type: allergy?.type ?? FHIRAllergyIntoleranceType.allergy,
-      criticality:
-        allergy?.criticality ?? FHIRAllergyIntoleranceCriticality.high,
+      type: allergy?.type,
+      medication: allergy?.medication,
     },
   })
 
@@ -63,6 +68,18 @@ export const AllergyForm = ({ allergy, onSubmit }: AllergyFormProps) => {
     <form onSubmit={handleSubmit}>
       <Field
         control={form.control}
+        name="medication"
+        label="Medication"
+        render={({ field }) => (
+          <MedicationSelect
+            medications={medications}
+            onValueChange={field.onChange}
+            {...field}
+          />
+        )}
+      />
+      <Field
+        control={form.control}
         name="type"
         label="Type"
         render={({ field }) => (
@@ -71,32 +88,11 @@ export const AllergyForm = ({ allergy, onSubmit }: AllergyFormProps) => {
               <SelectValue placeholder="Type" />
             </SelectTrigger>
             <SelectContent>
-              {Object.values(FHIRAllergyIntoleranceType).map((type) => (
+              {Object.values(AllergyType).map((type) => (
                 <SelectItem key={type} value={type}>
-                  {stringifyIntoleranceType(type)}
+                  {stringifyAllergyType(type)}
                 </SelectItem>
               ))}
-            </SelectContent>
-          </Select>
-        )}
-      />
-      <Field
-        control={form.control}
-        name="criticality"
-        label="Criticality"
-        render={({ field }) => (
-          <Select onValueChange={field.onChange} {...field}>
-            <SelectTrigger>
-              <SelectValue placeholder="Criticality" />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.values(FHIRAllergyIntoleranceCriticality).map(
-                (criticality) => (
-                  <SelectItem key={criticality} value={criticality}>
-                    {stringifyIntoleranceCriticality(criticality)}
-                  </SelectItem>
-                ),
-              )}
             </SelectContent>
           </Select>
         )}

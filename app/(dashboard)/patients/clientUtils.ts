@@ -5,6 +5,8 @@
 //
 // SPDX-License-Identifier: MIT
 //
+import { useMemo } from 'react'
+import { type MedicationsData } from '@/app/(dashboard)/patients/utils'
 import { ObservationType } from '@/modules/firebase/utils'
 import { strategy } from '@/packages/design-system/src/utils/misc'
 
@@ -67,4 +69,14 @@ export const getUnitOfObservationType = (
   return newUnit
 }
 
-export type LabUnit = ReturnType<typeof getObservationTypeUnits>[number]
+export const useMedicationsMap = (
+  medications: MedicationsData['medications'],
+) =>
+  useMemo(() => {
+    const entries = medications.flatMap((medicationClass) =>
+      medicationClass.medications.map(
+        (medication) => [medication.id, medication] as const,
+      ),
+    )
+    return new Map(entries)
+  }, [medications])
