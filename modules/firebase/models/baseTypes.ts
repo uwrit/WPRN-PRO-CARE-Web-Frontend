@@ -31,6 +31,11 @@ export interface FHIRExtension {
   valueQuantities?: FHIRSimpleQuantity[]
   valueReference?: FHIRReference<unknown>
   valueMedicationRequest?: FHIRMedicationRequest
+  valueString?: string
+}
+
+export enum ExtensionURL {
+  providerName = 'http://engagehf.bdh.stanford.edu/fhir/StructureDefinition/Appointment/extension/providerName',
 }
 
 export interface FHIRPeriod {
@@ -53,10 +58,10 @@ export interface FHIRRatio {
 //
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export interface FHIRReference<T> {
-  reference?: string
-  type?: string
-  identifier?: string
-  display?: string
+  reference?: string | null
+  type?: string | null
+  identifier?: string | null
+  display?: string | null
 }
 
 export interface FHIRSimpleQuantity {
