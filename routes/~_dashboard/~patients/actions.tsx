@@ -6,28 +6,37 @@
 // SPDX-License-Identifier: MIT
 //
 import { addDoc, setDoc } from '@firebase/firestore'
-import { addHours } from 'date-fns'
-import { docRefs, refs } from '@/modules/firebase/guards'
-import { AllergyType } from '@/modules/firebase/models/allergy'
-import { ExtensionURL } from '@/modules/firebase/models/baseTypes'
 import {
   FHIRAllergyIntoleranceCriticality,
   FHIRAllergyIntoleranceType,
   FHIRAppointmentStatus,
   FHIRObservationStatus,
-} from '@/modules/firebase/models/medication'
+  FHIRExtensionUrl,
+} from '@stanfordbdhg/engagehf-models'
+import { addHours } from 'date-fns'
+import { AllergyType } from '@/modules/firebase/allergy'
+import { docRefs, refs } from '@/modules/firebase/app'
+import {
+  basicFhirCoding,
+  type FHIRObservation,
+} from '@/modules/firebase/models'
 import { type ResourceType } from '@/modules/firebase/utils'
 import { getUnitOfObservationType } from '@/routes/~_dashboard/~patients/clientUtils'
 import { type AllergyFormSchema } from '@/routes/~_dashboard/~patients/~$id/AllergyForm'
 import { type AppointmentFormSchema } from '@/routes/~_dashboard/~patients/~$id/AppointmentForm'
 import { type LabFormSchema } from '@/routes/~_dashboard/~patients/~$id/LabForm'
 
-export const getObservationData = (payload: LabFormSchema) => {
+export const getObservationData = (payload: LabFormSchema): FHIRObservation => {
   const unit = getUnitOfObservationType(payload.type, payload.unit)
   return {
+    id: null,
+    extension: null,
+    effectiveInstant: null,
+    effectivePeriod: null,
+    component: null,
     resourceType: 'Observation',
     status: FHIRObservationStatus.final,
-    code: { coding: unit.coding },
+    code: { text: null, coding: unit.coding },
     valueQuantity: {
       value: payload.value,
       unit: unit.unit,
@@ -73,6 +82,9 @@ export const updateObservation = async (
 }
 
 const getAllergyData = (payload: AllergyFormSchema) => ({
+  id: null,
+  extension: null,
+  resourceType: 'Allergy',
   type:
     (
       payload.type === AllergyType.severeAllergy ||
@@ -89,8 +101,10 @@ const getAllergyData = (payload: AllergyFormSchema) => ({
       FHIRAllergyIntoleranceCriticality.high
     : null,
   code: {
+    text: null,
     coding: [
       {
+        ...basicFhirCoding,
         system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
         code: payload.medication,
       },
@@ -133,13 +147,17 @@ export const updateAllergy = async (
 const getAppointmentData = (
   payload: AppointmentFormSchema & { userId: string },
 ) => ({
+  resourceType: 'Appointment',
   status: FHIRAppointmentStatus.booked,
   start: payload.start.toISOString(),
   end: addHours(payload.start, 1).toISOString(),
   comment: payload.comment,
   patientInstruction: payload.patientInstruction,
   extension: [
-    { url: ExtensionURL.providerName, valueString: payload.providerName },
+    {
+      url: FHIRExtensionUrl.providerName as string,
+      valueString: payload.providerName,
+    },
   ],
   participant: [
     {
@@ -166,6 +184,7 @@ export const createAppointment = async (
       resourceType: payload.resourceType,
     }),
     {
+      id: null,
       created: new Date().toISOString(),
       ...getAppointmentData(payload),
     },

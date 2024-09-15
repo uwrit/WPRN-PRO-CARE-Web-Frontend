@@ -5,23 +5,23 @@
 //
 // SPDX-License-Identifier: MIT
 //
+import {
+  FHIRAllergyIntoleranceCriticality,
+  FHIRAllergyIntoleranceType,
+  FHIRExtensionUrl,
+  UserType,
+} from '@stanfordbdhg/engagehf-models'
 import { groupBy } from 'es-toolkit'
 import { query, where } from 'firebase/firestore'
 import { queryClient } from '@/app/ReactQueryClientProvider'
-import { getCurrentUser, refs } from '@/modules/firebase/guards'
-import { AllergyType } from '@/modules/firebase/models/allergy'
-import { ExtensionURL } from '@/modules/firebase/models/baseTypes'
-import {
-  type FHIRAllergyIntolerance,
-  FHIRAllergyIntoleranceCriticality,
-  FHIRAllergyIntoleranceType,
-} from '@/modules/firebase/models/medication'
+import { AllergyType } from '@/modules/firebase/allergy'
+import { getCurrentUser, refs } from '@/modules/firebase/app'
+import { type FHIRAllergyIntolerance } from '@/modules/firebase/models'
 import { mapAuthData } from '@/modules/firebase/user'
 import {
   getDocsData,
   ObservationType,
   type ResourceType,
-  UserType,
 } from '@/modules/firebase/utils'
 import { userOrganizationQueryOptions } from '@/modules/user/queries'
 
@@ -63,10 +63,10 @@ export const getMedicationsData = async () => {
 
   const getMedications = medicationsDocs.map(async (doc) => {
     const medicationClassExtension = doc.extension?.find((extension) =>
-      extension.valueReference?.reference?.startsWith(prefix),
+      extension.valueReference?.reference.startsWith(prefix),
     )
     const medicationClassId =
-      medicationClassExtension?.valueReference?.reference?.slice(
+      medicationClassExtension?.valueReference?.reference.slice(
         prefix.length + 1,
       )
 
@@ -193,7 +193,7 @@ export const getAllergiesData = async ({
   const allergyIntolerances = rawAllergies.map((allergy) => ({
     id: allergy.id,
     type: getAllergyType(allergy),
-    medication: allergy.code.coding?.at(0)?.code,
+    medication: allergy.code?.coding?.at(0)?.code,
   }))
   return { allergyIntolerances, userId, resourceType }
 }
@@ -211,7 +211,8 @@ export const getAppointmentsData = async ({
   const appointments = rawAppointments.map((appointment) => ({
     ...appointment,
     providerName: appointment.extension?.find(
-      (extension) => extension.url === (ExtensionURL.providerName as string),
+      (extension) =>
+        extension.url === (FHIRExtensionUrl.providerName as string),
     )?.valueString,
   }))
   return { appointments, userId, resourceType }

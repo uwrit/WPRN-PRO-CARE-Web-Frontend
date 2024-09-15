@@ -7,6 +7,19 @@
 //
 import { type Functions, httpsCallable } from '@firebase/functions'
 import {
+  type CreateInvitationInput,
+  type CreateInvitationOutput,
+  type DeleteUserInput,
+  type DeleteUserOutput,
+  type ExportHealthSummaryInput,
+  type ExportHealthSummaryOutput,
+  type FHIRMedication,
+  type GetUsersInformationInput,
+  type GetUsersInformationOutput,
+  type UpdateUserInformationInput,
+  type UpdateUserInformationOutput,
+} from '@stanfordbdhg/engagehf-models'
+import {
   collection,
   type CollectionReference,
   doc,
@@ -17,61 +30,16 @@ import {
   type Query,
 } from 'firebase/firestore'
 import {
-  type FHIRMedication,
-  type FHIRMedicationRequest,
-  type MedicationClass,
-  type FHIRObservation,
   type FHIRAllergyIntolerance,
   type FHIRAppointment,
-} from '@/modules/firebase/models/medication'
+  type FHIRMedicationRequest,
+  type FHIRObservation,
+  type Invitation,
+  type MedicationClass,
+  type Organization,
+  type User,
+} from '@/modules/firebase/models'
 import { strategy } from '@/packages/design-system/src/utils/misc'
-
-export interface Organization {
-  id: string
-  name: string
-  contactName: string
-  phoneNumber: string
-  emailAddress: string
-  owners: string[]
-}
-
-export interface Invitation {
-  userId?: string
-  auth?: UserAuth
-  user?: User
-}
-
-export interface UserMessagesSettings {
-  dailyRemindersAreActive?: boolean
-  textNotificationsAreActive?: boolean
-  medicationRemindersAreActive?: boolean
-}
-
-export enum UserType {
-  admin = 'admin',
-  clinician = 'clinician',
-  patient = 'patient',
-  owner = 'owner',
-}
-
-export interface User {
-  type: UserType
-  dateOfBirth?: string | null
-  clinician?: string
-  dateOfEnrollment?: string
-  invitationCode?: string
-  messagesSettings?: UserMessagesSettings
-  organization?: string
-  language?: string
-  timeZone?: string
-}
-
-export interface UserAuth {
-  displayName?: string
-  email?: string
-  phoneNumber?: string
-  photoURL?: string
-}
 
 export const collectionNames = {
   invitations: 'invitations',
@@ -264,14 +232,6 @@ export const getDocumentsRefs = (db: Firestore) => ({
     ) as DocumentReference<FHIRObservation>,
 })
 
-interface Result<T> {
-  data?: T
-  error?: {
-    code: string
-    message: string
-  }
-}
-
 export interface UserAuthenticationInformation {
   displayName: string | null
   email: string | null
@@ -279,63 +239,26 @@ export interface UserAuthenticationInformation {
   photoURL: string | null
 }
 
-export interface UserInformation {
-  auth: UserAuthenticationInformation
-  user?: User
-}
-
-export interface GetUsersInformationInput {
-  userIds: string[]
-  includeUserData?: boolean
-}
-
 export const getCallables = (functions: Functions) => ({
   createInvitation: httpsCallable<
-    {
-      auth: {
-        displayName?: string
-        email: string
-        phoneNumber?: string
-        photoURL?: string
-      }
-      user: {
-        type: UserType
-        organization?: string
-        clinician?: string
-        language?: string
-        timeZone?: string
-        dateOfBirth?: string | null
-      }
-    },
-    { id: string }
+    CreateInvitationInput,
+    CreateInvitationOutput
   >(functions, 'createInvitation'),
   getUsersInformation: httpsCallable<
     GetUsersInformationInput,
-    Record<string, Result<UserInformation>>
+    GetUsersInformationOutput
   >(functions, 'getUsersInformation'),
-  deleteUser: httpsCallable<{ userId: string }, undefined>(
+  deleteUser: httpsCallable<DeleteUserInput, DeleteUserOutput>(
     functions,
     'deleteUser',
   ),
   updateUserInformation: httpsCallable<
-    {
-      userId: string
-      data: {
-        auth: {
-          displayName?: string
-          email?: string
-          phoneNumber?: string
-          photoURL?: string
-        }
-      }
-    },
-    undefined
+    UpdateUserInformationInput,
+    UpdateUserInformationOutput
   >(functions, 'updateUserInformation'),
   exportHealthSummary: httpsCallable<
-    {
-      userId: string
-    },
-    { content: string }
+    ExportHealthSummaryInput,
+    ExportHealthSummaryOutput
   >(functions, 'exportHealthSummary'),
 })
 

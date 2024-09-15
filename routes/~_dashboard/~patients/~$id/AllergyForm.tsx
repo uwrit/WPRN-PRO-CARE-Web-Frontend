@@ -7,10 +7,7 @@
 //
 import { type ComponentProps } from 'react'
 import { z } from 'zod'
-import {
-  AllergyType,
-  stringifyAllergyType,
-} from '@/modules/firebase/models/allergy'
+import { AllergyType, stringifyAllergyType } from '@/modules/firebase/allergy'
 import { Button } from '@/packages/design-system/src/components/Button'
 import {
   Dialog,
@@ -55,7 +52,7 @@ export const AllergyForm = ({
     formSchema: allergyFormSchema,
     defaultValues: {
       type: allergy?.type,
-      medication: allergy?.medication,
+      medication: allergy?.medication ?? undefined,
     },
   })
 
