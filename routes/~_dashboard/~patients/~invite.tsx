@@ -8,6 +8,7 @@
 import { UserType } from '@stanfordbdhg/engagehf-models'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { Contact } from 'lucide-react'
+import { Helmet } from 'react-helmet'
 import { callables, docRefs } from '@/modules/firebase/app'
 import { useUser } from '@/modules/firebase/UserProvider'
 import { getDocDataOrThrow } from '@/modules/firebase/utils'
@@ -48,6 +49,9 @@ const InvitePatientPage = () => {
     <DashboardLayout
       title={<PageTitle title="Invite patient" icon={<Contact />} />}
     >
+      <Helmet>
+        <title>Invite patient</title>
+      </Helmet>
       <PatientForm
         onSubmit={invitePatient}
         clinicianPreselectId={

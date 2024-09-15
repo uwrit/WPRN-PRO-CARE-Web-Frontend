@@ -9,6 +9,7 @@ import { updateDoc } from '@firebase/firestore'
 import { UserType } from '@stanfordbdhg/engagehf-models'
 import { createFileRoute, notFound, useRouter } from '@tanstack/react-router'
 import { Users } from 'lucide-react'
+import { Helmet } from 'react-helmet'
 import { callables, docRefs, ensureType } from '@/modules/firebase/app'
 import { getDocDataOrThrow } from '@/modules/firebase/utils'
 import { queryClient } from '@/modules/query/queryClient'
@@ -64,16 +65,16 @@ const UserPage = () => {
     await router.invalidate()
   }
 
+  const userName = getUserName(authUser)
   return (
     <DashboardLayout
       title={
-        <PageTitle
-          title="Edit user"
-          subTitle={getUserName(authUser)}
-          icon={<Users />}
-        />
+        <PageTitle title="Edit user" subTitle={userName} icon={<Users />} />
       }
     >
+      <Helmet>
+        <title>Edit {userName}</title>
+      </Helmet>
       <UserForm
         organizations={organizations}
         type={user.type}

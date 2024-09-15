@@ -8,6 +8,7 @@
 import { UserType } from '@stanfordbdhg/engagehf-models'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { Users } from 'lucide-react'
+import { Helmet } from 'react-helmet'
 import { callables, ensureType } from '@/modules/firebase/app'
 import { queryClient } from '@/modules/query/queryClient'
 import { routes } from '@/modules/routes'
@@ -40,6 +41,9 @@ const InviteUserPage = () => {
 
   return (
     <DashboardLayout title={<PageTitle title="Invite user" icon={<Users />} />}>
+      <Helmet>
+        <title>Invite user</title>
+      </Helmet>
       <UserForm organizations={organizations} onSubmit={inviteUser} />
     </DashboardLayout>
   )

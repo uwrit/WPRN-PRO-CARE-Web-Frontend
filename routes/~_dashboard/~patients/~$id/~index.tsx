@@ -9,6 +9,7 @@ import { runTransaction, updateDoc } from '@firebase/firestore'
 import { UserType } from '@stanfordbdhg/engagehf-models'
 import { createFileRoute, notFound, useRouter } from '@tanstack/react-router'
 import { Contact } from 'lucide-react'
+import { Helmet } from 'react-helmet'
 import { callables, db, docRefs, refs } from '@/modules/firebase/app'
 import {
   getMedicationRequestData,
@@ -175,6 +176,9 @@ const PatientPage = () => {
         />
       }
     >
+      <Helmet>
+        <title>Edit {userName}</title>
+      </Helmet>
       <Tabs defaultValue={Tab.medications}>
         <TabsList className="mb-6 w-full">
           <TabsTrigger value={Tab.information} className="grow">

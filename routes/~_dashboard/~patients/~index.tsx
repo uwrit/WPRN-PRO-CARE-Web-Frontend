@@ -9,6 +9,7 @@ import { UserType } from '@stanfordbdhg/engagehf-models'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { query, where } from 'firebase/firestore'
 import { Contact, UserPlus } from 'lucide-react'
+import { Helmet } from 'react-helmet'
 import {
   docRefs,
   getCurrentUser,
@@ -96,6 +97,9 @@ const PatientsPage = () => {
         </Button>
       }
     >
+      <Helmet>
+        <title>Patients</title>
+      </Helmet>
       <PatientsTable data={patients} />
     </DashboardLayout>
   )

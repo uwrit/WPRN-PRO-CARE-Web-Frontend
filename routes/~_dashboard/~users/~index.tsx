@@ -9,6 +9,7 @@ import { UserType } from '@stanfordbdhg/engagehf-models'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { query, where } from 'firebase/firestore'
 import { UserPlus, Users } from 'lucide-react'
+import { Helmet } from 'react-helmet'
 import { ensureType, getCurrentUser, refs } from '@/modules/firebase/app'
 import { mapAuthData } from '@/modules/firebase/user'
 import { getDocsData } from '@/modules/firebase/utils'
@@ -91,6 +92,9 @@ const UsersPage = () => {
       }
       title={<PageTitle title="Users" icon={<Users />} />}
     >
+      <Helmet>
+        <title>Users</title>
+      </Helmet>
       <UsersTable data={users} />
     </DashboardLayout>
   )
