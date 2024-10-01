@@ -10,30 +10,18 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { query, where } from 'firebase/firestore'
 import { Contact, UserPlus } from 'lucide-react'
 import { Helmet } from 'react-helmet'
-import {
-  docRefs,
-  getCurrentUser,
-  getCurrentUserType,
-  refs,
-} from '@/modules/firebase/app'
-import { mapAuthData } from '@/modules/firebase/user'
-import { getDocData, getDocsData } from '@/modules/firebase/utils'
+import { getCurrentUser, refs } from '@/modules/firebase/app'
 import { routes } from '@/modules/routes'
-import {
-  getNonAdminInvitations,
-  getUserOrganizationsMap,
-  parseAuthToUser,
-  parseInvitationToUser,
-} from '@/modules/user/queries'
+import { parsePatientsQueries } from '@/modules/user/patients'
+import { getNonAdminInvitationsQuery } from '@/modules/user/queries'
 import { Button } from '@/packages/design-system/src/components/Button'
 import { PageTitle } from '@/packages/design-system/src/molecules/DashboardLayout'
 import { DashboardLayout } from '@/routes/~_dashboard/DashboardLayout'
 import { PatientsTable } from '@/routes/~_dashboard/~patients/PatientsTable'
 
-const getData = async () => {
-  const { currentUser } = await getCurrentUser()
-  const user = await getDocData(docRefs.user(currentUser.uid))
-  const organizationId = user?.organization
+const getQueries = async () => {
+  const { user } = await getCurrentUser()
+  const organizationId = user.organization
   if (!organizationId)
     throw new Error('Clinician/owner without organization id')
   return {
@@ -41,43 +29,21 @@ const getData = async () => {
       refs.users(),
       where('organization', '==', organizationId),
     ),
-    invitationsQuery: getNonAdminInvitations([organizationId]),
+    invitationsQuery: getNonAdminInvitationsQuery([organizationId]),
   }
 }
 
-const getAdminData = () => ({
+const getAdminQueries = () => ({
   patientsQuery: refs.users(),
   invitationsQuery: refs.invitations(),
 })
 
 const listPatients = async () => {
-  const userRole = await getCurrentUserType()
-  const { patientsQuery, invitationsQuery } =
-    userRole === UserType.admin ? getAdminData() : await getData()
-  const patients = await getDocsData(
-    query(patientsQuery, where('type', '==', UserType.patient)),
+  const { user } = await getCurrentUser()
+
+  return parsePatientsQueries(
+    user.type === UserType.admin ? getAdminQueries() : await getQueries(),
   )
-
-  const userIds = patients.map((patient) => patient.id)
-  const organizationMap = await getUserOrganizationsMap()
-
-  const invitations = await getDocsData(
-    query(invitationsQuery, where('user.type', '==', UserType.patient)),
-  )
-
-  const patientsData = await mapAuthData(
-    { userIds, includeUserData: true },
-    ({ auth, user }, id) => ({
-      ...parseAuthToUser(id, auth),
-      organization: organizationMap.get(user?.organization ?? ''),
-    }),
-  )
-
-  const invitedUsers = invitations.map((invitation) =>
-    parseInvitationToUser(invitation, organizationMap),
-  )
-
-  return [...invitedUsers, ...patientsData]
 }
 
 export type Patient = Awaited<ReturnType<typeof listPatients>>[number]

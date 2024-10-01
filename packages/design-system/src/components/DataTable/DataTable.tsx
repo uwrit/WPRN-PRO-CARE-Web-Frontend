@@ -5,37 +5,25 @@
 //
 // SPDX-License-Identifier: MIT
 //
+import { type Table as TableType } from '@tanstack/table-core'
+import { type ReactNode } from 'react'
 import {
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  type SortingState,
-  useReactTable,
-} from '@tanstack/react-table'
-import { type TableOptions } from '@tanstack/table-core'
-import { type ReactNode, useState } from 'react'
-import { useDebouncedCallback } from 'use-debounce'
-import { fuzzyFilter } from './DataTable.utils'
+  DataTableTableView,
+  type DataTableTableViewSpecificProps,
+} from '@/packages/design-system/src/components/DataTable/DataTableTableView'
+import { useDataTable, type UseDataTableProps } from './DataTable.utils'
+import { DataTablePagination } from './DataTablePagination'
 import { GlobalFilterInput } from './GlobalFilterInput'
-import { ToggleSortButton } from './ToggleSortButton'
 import { cn } from '../../utils/className'
-import { type PartialSome } from '../../utils/misc'
-import { ButtonPagination } from '../Pagination/ButtonPagination'
-import { RangeCounter } from '../RangeCounter'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '../Table'
-import { TableEmptyState } from '../Table/TableEmptyState'
 
-export interface DataTableProps<Data>
-  extends PartialSome<TableOptions<Data>, 'getCoreRowModel' | 'filterFns'> {
+export type DataTableViewProps<Data> = { table: TableType<Data> } & Pick<
+  DataTableProps<Data>,
+  'entityName'
+>
+
+type ViewRenderProp<Data> = (props: DataTableViewProps<Data>) => ReactNode
+
+export interface DataTableProps<Data> extends UseDataTableProps<Data> {
   className?: string
   /**
    * Name of the presented data entity
@@ -44,8 +32,17 @@ export interface DataTableProps<Data>
    * @example "users"
    * */
   entityName?: string
-  pageSize?: number
-  header?: ReactNode
+  header?: ReactNode | ViewRenderProp<Data>
+  /**
+   * Render props pattern to define different type of views than standard DataTableView
+   * */
+  children?: ViewRenderProp<Data>
+  bordered?: boolean
+  /**
+   * Hides DataTable features, like header or pagination if not required
+   * */
+  minimal?: boolean
+  tableView?: DataTableTableViewSpecificProps<Data>
 }
 
 export const DataTable = <Data,>({
@@ -53,117 +50,47 @@ export const DataTable = <Data,>({
   columns,
   entityName,
   data,
-  pageSize = 50,
+  pageSize,
   header,
+  children,
+  bordered = true,
+  minimal,
+  tableView,
   ...props
 }: DataTableProps<Data>) => {
-  const [sorting, setSorting] = useState<SortingState>([])
-  const [globalFilter, setGlobalFilter] = useState('')
-  const setGlobalFilterDebounced = useDebouncedCallback(
-    (value: string) => setGlobalFilter(value),
-    200,
-  )
-
-  const table = useReactTable({
-    columns,
+  const { table, setGlobalFilterDebounced } = useDataTable({
     data,
-    filterFns: {
-      fuzzy: fuzzyFilter,
-    },
-    globalFilterFn: 'fuzzy',
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    onGlobalFilterChange: setGlobalFilter,
-    onSortingChange: setSorting,
-    state: { globalFilter, sorting },
-    initialState: {
-      pagination: {
-        pageSize,
-      },
-    },
+    columns,
+    pageSize,
     ...props,
   })
   const rows = table.getRowModel().rows
-  const filteredRowsLength = table.getFilteredRowModel().rows.length
 
-  const tableState = table.getState()
-  const currentPage = tableState.pagination.pageIndex + 1
+  const viewProps = { table, entityName }
 
-  const itemsRangeStartIndex = tableState.pagination.pageIndex * pageSize
-
-  const pageCount = table.getPageCount()
   return (
-    <div className={cn('rounded-md border bg-surface-primary', className)}>
-      <header className="flex items-center border-b p-4">
-        <GlobalFilterInput
-          onChange={(event) => setGlobalFilterDebounced(event.target.value)}
-          entityName={entityName}
-        />
-        {header}
-      </header>
-      <Table>
-        <TableHeader>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id} isHoverable={false}>
-              {headerGroup.headers.map((header) => {
-                const columnContent =
-                  header.isPlaceholder ? null : (
-                    flexRender(
-                      header.column.columnDef.header,
-                      header.getContext(),
-                    )
-                  )
-                return (
-                  <TableHead key={header.id}>
-                    {header.column.getCanFilter() ?
-                      <ToggleSortButton header={header}>
-                        {columnContent}
-                      </ToggleSortButton>
-                    : columnContent}
-                  </TableHead>
-                )
-              })}
-            </TableRow>
-          ))}
-        </TableHeader>
-        <TableBody>
-          {!rows.length ?
-            <TableEmptyState
-              entityName={entityName}
-              colSpan={columns.length}
-              textFilter={globalFilter}
-            />
-          : rows.map((row) => (
-              <TableRow
-                key={row.id}
-                data-state={row.getIsSelected() && 'selected'}
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))
-          }
-        </TableBody>
-      </Table>
-      {!!rows.length && (
-        <footer className="flex items-center justify-between border-t p-4">
-          <RangeCounter
-            start={itemsRangeStartIndex + 1}
-            end={itemsRangeStartIndex + rows.length}
-            all={filteredRowsLength}
+    <div
+      className={cn(
+        'rounded-md bg-surface-primary',
+        bordered && 'border',
+        className,
+      )}
+    >
+      {!minimal && (
+        <header className="flex items-center border-b p-4">
+          <GlobalFilterInput
+            onChange={(event) => setGlobalFilterDebounced(event.target.value)}
+            entityName={entityName}
           />
-          {pageCount > 1 && (
-            <ButtonPagination
-              total={pageCount}
-              page={currentPage}
-              onPageChange={(page) => table.setPageIndex(page - 1)}
-            />
-          )}
+          {typeof header === 'function' ? header(viewProps) : header}
+        </header>
+      )}
+      {children ?
+        children(viewProps)
+      : <DataTableTableView {...tableView} {...viewProps} />}
+      {(!minimal || table.getPageCount() > 1) && !!rows.length && (
+        <footer className="flex items-center justify-between border-t p-4">
+          <DataTablePagination table={table} />
         </footer>
       )}
     </div>

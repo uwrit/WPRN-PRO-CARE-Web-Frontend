@@ -6,18 +6,18 @@
 // SPDX-License-Identifier: MIT
 //
 import { type CellContext } from '@tanstack/react-table'
+import { formatISODateTime } from '../../utils/date'
 import { type Nil } from '../../utils/misc'
 
-export const dateColumn = <T>(props: CellContext<T, Nil<string>>) => {
+export const dateColumn = <T>(props: CellContext<T, Nil<string | Date>>) => {
   const value = props.getValue()
   const date = value ? new Date(value) : undefined
   return date?.toLocaleDateString() ?? ''
 }
 
-export const dateTimeColumn = <T>(props: CellContext<T, Nil<string>>) => {
+export const dateTimeColumn = <T>(
+  props: CellContext<T, Nil<string | Date>>,
+) => {
   const value = props.getValue()
-  const date = value ? new Date(value) : undefined
-  return date ?
-      `${date.toLocaleDateString()} ${date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}`
-    : ''
+  return value ? formatISODateTime(value) : ''
 }

@@ -5,19 +5,20 @@
 //
 // SPDX-License-Identifier: MIT
 //
-import type {
-  fhirAllergyIntoleranceConverter,
-  fhirAppointmentConverter,
-  fhirCodingConverter,
-  fhirElementConverter,
-  fhirMedicationRequestConverter,
-  fhirObservationConverter,
-  fhirResourceConverter,
-  InferEncoded,
-  invitationConverter,
-  medicationClassConverter,
-  organizationConverter,
-  userConverter,
+import {
+  type fhirAllergyIntoleranceConverter,
+  type fhirAppointmentConverter,
+  type fhirCodingConverter,
+  type fhirElementConverter,
+  type fhirMedicationRequestConverter,
+  type fhirObservationConverter,
+  type fhirResourceConverter,
+  type InferEncoded,
+  type invitationConverter,
+  type medicationClassConverter,
+  type organizationConverter,
+  type userConverter,
+  type userMessageConverter,
 } from '@stanfordbdhg/engagehf-models'
 
 export type Organization = InferEncoded<typeof organizationConverter> & {
@@ -58,6 +59,12 @@ export type FHIRAllergyIntolerance = InferEncoded<
   typeof fhirAllergyIntoleranceConverter
 >
 
-export type FHIRAppointment = InferEncoded<typeof fhirAppointmentConverter>
+export type FHIRAppointment = InferEncoded<typeof fhirAppointmentConverter> & {
+  id: string
+}
+
+export type UserMessage = InferEncoded<typeof userMessageConverter> & {
+  id: string
+}
 
 export type LocalizedText = string | Record<string, string>

@@ -5,23 +5,35 @@
 //
 // SPDX-License-Identifier: MIT
 //
+import { deleteDoc } from '@firebase/firestore'
 import { useRouter } from '@tanstack/react-router'
 import { createColumnHelper } from '@tanstack/table-core'
-import { Plus } from 'lucide-react'
-import { useMemo } from 'react'
+import { Pencil, Plus, Trash } from 'lucide-react'
+import { docRefs } from '@/modules/firebase/app'
 import { Button } from '@/packages/design-system/src/components/Button'
 import {
   DataTable,
   dateColumn,
+  RowDropdownMenu,
 } from '@/packages/design-system/src/components/DataTable'
-import { useOpenState } from '@/packages/design-system/src/utils/useOpenState'
-import { createObservation } from '@/routes/~_dashboard/~patients/actions'
+import { DropdownMenuItem } from '@/packages/design-system/src/components/DropdownMenu'
+import { ConfirmDeleteDialog } from '@/packages/design-system/src/molecules/ConfirmDeleteDialog'
+import {
+  useOpenState,
+  useStatefulOpenState,
+} from '@/packages/design-system/src/utils/useOpenState'
+import {
+  createObservation,
+  updateObservation,
+} from '@/routes/~_dashboard/~patients/actions'
 import type {
   LabsData,
   Observation,
 } from '@/routes/~_dashboard/~patients/utils'
-import { LabFormDialog } from '@/routes/~_dashboard/~patients/~$id/LabForm'
-import { LabMenu } from '@/routes/~_dashboard/~patients/~$id/LabMenu'
+import {
+  LabFormDialog,
+  type LabFormSchema,
+} from '@/routes/~_dashboard/~patients/~$id/LabForm'
 
 interface LabsProps extends LabsData {}
 
@@ -31,53 +43,105 @@ export const Labs = ({ observations, userId, resourceType }: LabsProps) => {
   const router = useRouter()
   const createDialog = useOpenState()
 
-  const columns = useMemo(
-    () => [
-      columnHelper.accessor('effectiveDateTime', {
-        header: 'Date',
-        cell: dateColumn,
+  const deleteDialog = useStatefulOpenState<Observation>()
+  const editDialog = useStatefulOpenState<Observation>()
+
+  const handleDelete = async () => {
+    const observation = deleteDialog.state
+    if (!observation) return
+    await deleteDoc(
+      docRefs.userObservation({
+        userId,
+        resourceType,
+        observationId: observation.id,
+        observationType: observation.type,
       }),
-      columnHelper.accessor('type', {
-        header: 'Type',
-      }),
-      columnHelper.accessor('value', {
-        header: 'Value',
-        cell: (props) => {
-          const observation = props.row.original
-          return `${observation.value} ${observation.unit}`
-        },
-      }),
-      columnHelper.display({
-        id: 'actions',
-        cell: (props) => (
-          <LabMenu
-            observation={props.row.original}
-            userId={userId}
-            resourceType={resourceType}
-          />
-        ),
-      }),
-    ],
-    [resourceType, userId],
-  )
+    )
+    await router.invalidate()
+    deleteDialog.close()
+  }
+
+  const handleEdit = async (data: LabFormSchema) => {
+    const observation = deleteDialog.state
+    if (!observation) return
+    await updateObservation({
+      userId,
+      resourceType,
+      observationId: observation.id,
+      ...data,
+    })
+    await router.invalidate()
+    editDialog.close()
+  }
+
+  const handleCreate = async (data: LabFormSchema) => {
+    await createObservation({
+      userId,
+      resourceType,
+      ...data,
+    })
+    await router.invalidate()
+    createDialog.close()
+  }
 
   return (
     <>
       <LabFormDialog
-        onSubmit={async (data) => {
-          await createObservation({
-            userId,
-            resourceType,
-            ...data,
-          })
-          await router.invalidate()
-          createDialog.close()
-        }}
+        onSubmit={handleEdit}
+        open={editDialog.isOpen}
+        onOpenChange={editDialog.close}
+        observation={editDialog.state}
+      />
+      <LabFormDialog
+        onSubmit={handleCreate}
         open={createDialog.isOpen}
         onOpenChange={createDialog.setIsOpen}
       />
+      <ConfirmDeleteDialog
+        open={deleteDialog.isOpen}
+        onOpenChange={deleteDialog.close}
+        entityName="lab"
+        onDelete={handleDelete}
+      />
       <DataTable
-        columns={columns}
+        columns={[
+          columnHelper.accessor('effectiveDateTime', {
+            header: 'Date',
+            cell: dateColumn,
+          }),
+          columnHelper.accessor('type', {
+            header: 'Type',
+          }),
+          columnHelper.accessor('value', {
+            header: 'Value',
+            cell: (props) => {
+              const observation = props.row.original
+              return `${observation.value} ${observation.unit}`
+            },
+          }),
+          columnHelper.display({
+            id: 'actions',
+            cell: (props) => {
+              const observation = props.row.original
+              return (
+                <RowDropdownMenu>
+                  <DropdownMenuItem
+                    onClick={() => editDialog.open(observation)}
+                  >
+                    <Pencil />
+                    Edit
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => deleteDialog.open(observation)}
+                  >
+                    <Trash />
+                    Delete
+                  </DropdownMenuItem>
+                </RowDropdownMenu>
+              )
+            },
+          }),
+        ]}
         data={observations}
         entityName="observations"
         header={
@@ -93,6 +157,9 @@ export const Labs = ({ observations, userId, resourceType }: LabsProps) => {
             </Button>
           </>
         }
+        tableView={{
+          onRowClick: editDialog.open,
+        }}
       />
     </>
   )

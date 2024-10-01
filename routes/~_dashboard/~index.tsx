@@ -9,14 +9,21 @@ import { createFileRoute } from '@tanstack/react-router'
 import { Home } from 'lucide-react'
 import { Helmet } from 'react-helmet'
 import { PageTitle } from '@/packages/design-system/src/molecules/DashboardLayout'
+import { YourPatientsCard } from '@/routes/~_dashboard/YourPatientsCard'
 import { DashboardLayout } from './DashboardLayout'
+import { NotificationsCard } from './NotificationsCard'
+import { UpcomingAppointmentsCard } from './UpcomingAppointmentsCard'
 
 const DashboardPage = () => (
   <DashboardLayout title={<PageTitle title="Home" icon={<Home />} />}>
     <Helmet>
       <title>Home</title>
     </Helmet>
-    <h1 className="text-2xl">Dashboard</h1>
+    <div className="grid gap-5 xl:grid-cols-2">
+      <NotificationsCard />
+      <UpcomingAppointmentsCard />
+      <YourPatientsCard />
+    </div>
   </DashboardLayout>
 )
 

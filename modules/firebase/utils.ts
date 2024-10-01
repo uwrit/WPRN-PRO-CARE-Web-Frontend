@@ -11,6 +11,8 @@ import {
   type CreateInvitationOutput,
   type DeleteUserInput,
   type DeleteUserOutput,
+  type DismissMessageInput,
+  type DismissMessageOutput,
   type ExportHealthSummaryInput,
   type ExportHealthSummaryOutput,
   type FHIRMedication,
@@ -38,6 +40,7 @@ import {
   type MedicationClass,
   type Organization,
   type User,
+  type UserMessage,
 } from '@/modules/firebase/models'
 import { strategy } from '@/packages/design-system/src/utils/misc'
 
@@ -54,6 +57,7 @@ export const collectionNames = {
   creatinineObservations: 'creatinineObservations',
   eGfrObservations: 'eGfrObservations',
   potassiumObservations: 'potassiumObservations',
+  messages: 'messages',
 }
 
 export type ResourceType = 'invitation' | 'user'
@@ -157,6 +161,11 @@ export const getCollectionRefs = (db: Firestore) => ({
       db,
       `/${userPath(resourceType)}/${userId}/${observationPath(observationType)}`,
     ) as CollectionReference<FHIRObservation>,
+  userMessages: ({ userId }: { userId: string }) =>
+    collection(
+      db,
+      `/${collectionNames.users}/${userId}/${collectionNames.messages}`,
+    ) as CollectionReference<UserMessage>,
 })
 
 export const getDocumentsRefs = (db: Firestore) => ({
@@ -230,6 +239,11 @@ export const getDocumentsRefs = (db: Firestore) => ({
       db,
       `/${userPath(resourceType)}/${userId}/${observationPath(observationType)}/${observationId}`,
     ) as DocumentReference<FHIRObservation>,
+  userMessage: ({ userId, messageId }: { userId: string; messageId: string }) =>
+    doc(
+      db,
+      `/${collectionNames.users}/${userId}/${collectionNames.messages}/${messageId}`,
+    ) as DocumentReference<UserMessage>,
 })
 
 export interface UserAuthenticationInformation {
@@ -260,6 +274,10 @@ export const getCallables = (functions: Functions) => ({
     ExportHealthSummaryInput,
     ExportHealthSummaryOutput
   >(functions, 'exportHealthSummary'),
+  dismissMessage: httpsCallable<DismissMessageInput, DismissMessageOutput>(
+    functions,
+    'dismissMessage',
+  ),
 })
 
 export const getDocData = async <T>(reference: DocumentReference<T>) => {
@@ -274,8 +292,7 @@ export const getDocData = async <T>(reference: DocumentReference<T>) => {
 }
 
 export const getDocDataOrThrow = async <T>(reference: DocumentReference<T>) => {
-  const doc = await getDoc(reference)
-  const data = doc.data()
+  const data = await getDocData(reference)
   if (!data) {
     throw new Error(`Doc not found: ${reference.path}`)
   }

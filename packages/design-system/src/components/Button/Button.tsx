@@ -18,11 +18,13 @@ export const buttonVariants = {
       'border border-input bg-surface-primary hover:bg-accent hover:text-accent-foreground',
     secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/70',
     ghost: 'hover:bg-accent hover:text-accent-foreground',
+    ghostPrimary: 'text-primary hover:bg-primary/10',
     destructive:
       'bg-destructive text-destructive-foreground hover:bg-destructive/80',
     link: 'text-primary underline-offset-4 hover:underline',
   },
   size: {
+    xs: 'h-6 text-xs px-2 py-1 rounded-md gap-1',
     default: 'h-10 px-4 py-2 rounded-md gap-2',
     sm: 'h-9 rounded-md px-3 gap-2',
     lg: 'h-11 rounded-md px-8 gap-2.5',

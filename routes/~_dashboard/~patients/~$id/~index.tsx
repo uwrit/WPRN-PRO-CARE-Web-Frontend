@@ -10,6 +10,7 @@ import { UserType } from '@stanfordbdhg/engagehf-models'
 import { createFileRoute, notFound, useRouter } from '@tanstack/react-router'
 import { Contact } from 'lucide-react'
 import { Helmet } from 'react-helmet'
+import { z } from 'zod'
 import { callables, db, docRefs, refs } from '@/modules/firebase/app'
 import {
   getMedicationRequestData,
@@ -48,6 +49,7 @@ import { Allergies } from '@/routes/~_dashboard/~patients/~$id/Allergies'
 import { Appointments } from '@/routes/~_dashboard/~patients/~$id/Appointments'
 import { GenerateHealthSummary } from '@/routes/~_dashboard/~patients/~$id/GenerateHealthSummary'
 import { Labs } from '@/routes/~_dashboard/~patients/~$id/Labs'
+import { Notifications } from '@/routes/~_dashboard/~patients/~$id/Notifications'
 import { DashboardLayout } from '../../DashboardLayout'
 
 const getUserMedications = async (payload: {
@@ -69,8 +71,9 @@ const getUserMedications = async (payload: {
   })
 }
 
-enum Tab {
+export enum PatientPageTab {
   information = 'information',
+  notifications = 'notifications',
   medications = 'medications',
   allergies = 'allergies',
   labs = 'labs',
@@ -80,6 +83,7 @@ enum Tab {
 const PatientPage = () => {
   const router = useRouter()
   const { id: userId } = Route.useParams()
+  const { tab } = Route.useSearch()
   const {
     medications,
     formProps,
@@ -179,25 +183,28 @@ const PatientPage = () => {
       <Helmet>
         <title>Edit {userName}</title>
       </Helmet>
-      <Tabs defaultValue={Tab.medications}>
+      <Tabs defaultValue={tab ?? PatientPageTab.information}>
         <TabsList className="mb-6 w-full">
-          <TabsTrigger value={Tab.information} className="grow">
+          <TabsTrigger value={PatientPageTab.information} className="grow">
             Information
           </TabsTrigger>
-          <TabsTrigger value={Tab.medications} className="grow">
+          <TabsTrigger value={PatientPageTab.notifications} className="grow">
+            Notifications
+          </TabsTrigger>
+          <TabsTrigger value={PatientPageTab.medications} className="grow">
             Medications
           </TabsTrigger>
-          <TabsTrigger value={Tab.allergies} className="grow">
+          <TabsTrigger value={PatientPageTab.allergies} className="grow">
             Allergies
           </TabsTrigger>
-          <TabsTrigger value={Tab.labs} className="grow">
+          <TabsTrigger value={PatientPageTab.labs} className="grow">
             Labs
           </TabsTrigger>
-          <TabsTrigger value={Tab.appointments} className="grow">
+          <TabsTrigger value={PatientPageTab.appointments} className="grow">
             Appointments
           </TabsTrigger>
         </TabsList>
-        <TabsContent value={Tab.information}>
+        <TabsContent value={PatientPageTab.information}>
           <PatientForm
             user={user}
             userInfo={authUser}
@@ -205,7 +212,10 @@ const PatientPage = () => {
             {...formProps}
           />
         </TabsContent>
-        <TabsContent value={Tab.medications}>
+        <TabsContent value={PatientPageTab.notifications}>
+          <Notifications userId={userId} />
+        </TabsContent>
+        <TabsContent value={PatientPageTab.medications}>
           <Medications
             {...medications}
             onSave={saveMedications}
@@ -214,13 +224,13 @@ const PatientPage = () => {
             }}
           />
         </TabsContent>
-        <TabsContent value={Tab.allergies}>
+        <TabsContent value={PatientPageTab.allergies}>
           <Allergies {...medications} {...allergiesData} />
         </TabsContent>
-        <TabsContent value={Tab.labs}>
+        <TabsContent value={PatientPageTab.labs}>
           <Labs {...labsData} />
         </TabsContent>
-        <TabsContent value={Tab.appointments}>
+        <TabsContent value={PatientPageTab.appointments}>
           <Appointments {...appointmentsData} />
         </TabsContent>
       </Tabs>
@@ -230,6 +240,9 @@ const PatientPage = () => {
 
 export const Route = createFileRoute('/_dashboard/patients/$id/')({
   component: PatientPage,
+  validateSearch: z.object({
+    tab: z.nativeEnum(PatientPageTab).optional().catch(undefined),
+  }),
   loader: async ({ params }) => {
     const userId = params.id
     const { resourceType, user, authUser } = await getUserData(userId)
