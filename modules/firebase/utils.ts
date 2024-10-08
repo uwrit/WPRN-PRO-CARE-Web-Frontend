@@ -39,6 +39,7 @@ import {
   type Invitation,
   type MedicationClass,
   type Organization,
+  type QuestionnaireResponse,
   type User,
   type UserMessage,
 } from '@/modules/firebase/models'
@@ -58,6 +59,7 @@ export const collectionNames = {
   eGfrObservations: 'eGfrObservations',
   potassiumObservations: 'potassiumObservations',
   messages: 'messages',
+  questionnaireResponses: 'questionnaireResponses',
 }
 
 export type ResourceType = 'invitation' | 'user'
@@ -71,21 +73,15 @@ export const userPath = (resourceType: ResourceType) =>
     resourceType,
   )
 
-export enum ObservationType {
-  creatinine = 'creatinine',
-  eGFR = 'eGFR',
-  potassium = 'potassium',
+export enum UserObservationCollection {
+  bodyWeight = 'bodyWeightObservations',
+  bloodPressure = 'bloodPressureObservations',
+  creatinine = 'creatinineObservations',
+  dryWeight = 'dryWeightObservations',
+  eGfr = 'eGfrObservations',
+  heartRate = 'heartRateObservations',
+  potassium = 'potassiumObservations',
 }
-
-export const observationPath = (type: ObservationType) =>
-  strategy(
-    {
-      [ObservationType.creatinine]: collectionNames.creatinineObservations,
-      [ObservationType.eGFR]: collectionNames.eGfrObservations,
-      [ObservationType.potassium]: collectionNames.potassiumObservations,
-    },
-    type,
-  )
 
 export const getCollectionRefs = (db: Firestore) => ({
   users: () =>
@@ -155,17 +151,28 @@ export const getCollectionRefs = (db: Firestore) => ({
   }: {
     userId: string
     resourceType: ResourceType
-    observationType: ObservationType
+    observationType: UserObservationCollection
   }) =>
     collection(
       db,
-      `/${userPath(resourceType)}/${userId}/${observationPath(observationType)}`,
+      `/${userPath(resourceType)}/${userId}/${observationType}`,
     ) as CollectionReference<FHIRObservation>,
   userMessages: ({ userId }: { userId: string }) =>
     collection(
       db,
       `/${collectionNames.users}/${userId}/${collectionNames.messages}`,
     ) as CollectionReference<UserMessage>,
+  questionnaireResponses: ({
+    userId,
+    resourceType,
+  }: {
+    userId: string
+    resourceType: ResourceType
+  }) =>
+    collection(
+      db,
+      `/${userPath(resourceType)}/${userId}/${collectionNames.questionnaireResponses}`,
+    ) as CollectionReference<QuestionnaireResponse>,
 })
 
 export const getDocumentsRefs = (db: Firestore) => ({
@@ -232,12 +239,12 @@ export const getDocumentsRefs = (db: Firestore) => ({
   }: {
     userId: string
     resourceType: ResourceType
-    observationType: ObservationType
+    observationType: UserObservationCollection
     observationId: string
   }) =>
     doc(
       db,
-      `/${userPath(resourceType)}/${userId}/${observationPath(observationType)}/${observationId}`,
+      `/${userPath(resourceType)}/${userId}/${observationType}/${observationId}`,
     ) as DocumentReference<FHIRObservation>,
   userMessage: ({ userId, messageId }: { userId: string; messageId: string }) =>
     doc(

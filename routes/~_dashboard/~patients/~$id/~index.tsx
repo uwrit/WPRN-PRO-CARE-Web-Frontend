@@ -44,12 +44,14 @@ import {
   getFormProps,
   getLabsData,
   getMedicationsData,
+  getUserActivity,
 } from '@/routes/~_dashboard/~patients/utils'
 import { Allergies } from '@/routes/~_dashboard/~patients/~$id/Allergies'
 import { Appointments } from '@/routes/~_dashboard/~patients/~$id/Appointments'
 import { GenerateHealthSummary } from '@/routes/~_dashboard/~patients/~$id/GenerateHealthSummary'
 import { Labs } from '@/routes/~_dashboard/~patients/~$id/Labs'
 import { Notifications } from '@/routes/~_dashboard/~patients/~$id/Notifications'
+import { UserActivity } from '@/routes/~_dashboard/~patients/~$id/UserActivity'
 import { DashboardLayout } from '../../DashboardLayout'
 
 const getUserMedications = async (payload: {
@@ -94,6 +96,7 @@ const PatientPage = () => {
     user,
     authUser,
     resourceType,
+    activity,
   } = Route.useLoaderData()
 
   const updatePatient = async (form: PatientFormSchema) => {
@@ -205,12 +208,15 @@ const PatientPage = () => {
           </TabsTrigger>
         </TabsList>
         <TabsContent value={PatientPageTab.information}>
-          <PatientForm
-            user={user}
-            userInfo={authUser}
-            onSubmit={updatePatient}
-            {...formProps}
-          />
+          <div className="flex flex-col gap-6 xl:flex-row">
+            <UserActivity activity={activity} />
+            <PatientForm
+              user={user}
+              userInfo={authUser}
+              onSubmit={updatePatient}
+              {...formProps}
+            />
+          </div>
         </TabsContent>
         <TabsContent value={PatientPageTab.notifications}>
           <Notifications userId={userId} />
@@ -245,10 +251,9 @@ export const Route = createFileRoute('/_dashboard/patients/$id/')({
   }),
   loader: async ({ params }) => {
     const userId = params.id
-    const { resourceType, user, authUser } = await getUserData(userId)
-    if (!user || !authUser || user.type !== UserType.patient) {
-      throw notFound()
-    }
+    const userData = await getUserData(userId)
+    const { resourceType, user, authUser } = userData
+    if (user.type !== UserType.patient) throw notFound()
 
     return {
       user,
@@ -260,6 +265,7 @@ export const Route = createFileRoute('/_dashboard/patients/$id/')({
       allergiesData: await getAllergiesData({ userId, resourceType }),
       labsData: await getLabsData({ userId, resourceType }),
       appointmentsData: await getAppointmentsData({ userId, resourceType }),
+      activity: await getUserActivity(userData),
     }
   },
 })

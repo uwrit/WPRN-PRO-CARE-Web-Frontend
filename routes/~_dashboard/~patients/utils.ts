@@ -11,7 +11,7 @@ import {
   UserType,
 } from '@stanfordbdhg/engagehf-models'
 import { groupBy } from 'es-toolkit'
-import { query, where } from 'firebase/firestore'
+import { limit, orderBy, query, where } from 'firebase/firestore'
 import { AllergyType } from '@/modules/firebase/allergy'
 import { getCurrentUser, refs } from '@/modules/firebase/app'
 import {
@@ -20,13 +20,13 @@ import {
 } from '@/modules/firebase/appointment'
 import { type FHIRAllergyIntolerance } from '@/modules/firebase/models'
 import { mapAuthData } from '@/modules/firebase/user'
-import {
-  getDocsData,
-  ObservationType,
-  type ResourceType,
-} from '@/modules/firebase/utils'
+import { getDocsData, type ResourceType } from '@/modules/firebase/utils'
 import { queryClient } from '@/modules/query/queryClient'
-import { userOrganizationQueryOptions } from '@/modules/user/queries'
+import {
+  type getUserData,
+  userOrganizationQueryOptions,
+} from '@/modules/user/queries'
+import { labsObservationCollections } from '@/routes/~_dashboard/~patients/clientUtils'
 
 const getUserClinicians = async () => {
   const { user } = await getCurrentUser()
@@ -145,14 +145,12 @@ export const getLabsData = async ({
   resourceType: ResourceType
 }) => {
   const rawObservations = await Promise.all(
-    Object.values(ObservationType).map(async (type) => {
-      return {
-        type,
-        data: await getDocsData(
-          refs.userObservation({ userId, resourceType, observationType: type }),
-        ),
-      }
-    }),
+    labsObservationCollections.map(async (type) => ({
+      type,
+      data: await getDocsData(
+        refs.userObservation({ userId, resourceType, observationType: type }),
+      ),
+    })),
   )
 
   const observations = rawObservations.flatMap((observations) =>
@@ -218,6 +216,24 @@ export const getAppointmentsData = async ({
   }
 }
 
+export const getUserActivity = async ({
+  user,
+  resourceType,
+  authUser,
+}: Awaited<ReturnType<typeof getUserData>>) => {
+  const latestQuestionnaires = await getDocsData(
+    query(
+      refs.questionnaireResponses({ resourceType, userId: authUser.uid }),
+      orderBy('authored'),
+      limit(1),
+    ),
+  )
+  return {
+    lastActiveDate: user.lastActiveDate,
+    latestQuestionnaireDate: latestQuestionnaires.at(0)?.authored,
+  }
+}
+
 export type AllergiesData = Awaited<ReturnType<typeof getAllergiesData>>
 export type Allergy = AllergiesData['allergyIntolerances'][number]
 export type AppointmentsData = Awaited<ReturnType<typeof getAppointmentsData>>
@@ -225,3 +241,4 @@ export type Appointment = AppointmentsData['appointments'][number]
 export type LabsData = Awaited<ReturnType<typeof getLabsData>>
 export type Observation = LabsData['observations'][number]
 export type MedicationsData = Awaited<ReturnType<typeof getMedicationsData>>
+export type UserActivity = Awaited<ReturnType<typeof getUserActivity>>
