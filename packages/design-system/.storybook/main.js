@@ -16,8 +16,19 @@ const config = {
     '@storybook/addon-interactions',
   ],
   framework: {
-    name: '@storybook/nextjs',
-    options: {},
+    name: '@storybook/react-vite',
+  },
+  core: {
+    builder: {
+      name: '@storybook/builder-vite',
+      options: {
+        viteConfigPath: './vite.config.ts',
+      },
+    },
+  },
+  docs: {},
+  typescript: {
+    reactDocgen: 'react-docgen-typescript',
   },
 }
 
