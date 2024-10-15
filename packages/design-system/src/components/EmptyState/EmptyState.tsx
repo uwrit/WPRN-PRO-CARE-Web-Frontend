@@ -6,11 +6,16 @@
 // SPDX-License-Identifier: MIT
 //
 import { SearchX, ListX } from 'lucide-react'
-import { type HTMLProps } from 'react'
+import { type HTMLProps, type ReactNode } from 'react'
 import { cn } from '../../utils/className'
 
 export interface EmptyStateProps extends HTMLProps<HTMLDivElement> {
-  entityName?: string
+  /**
+   * Name of the presented missing data entity
+   * Provide pluralized and lowercased
+   * @example "users"
+   * */
+  entityName?: ReactNode
   /**
    * Provide text filter that data is filtered by
    * */
@@ -26,6 +31,7 @@ export const EmptyState = ({
   textFilter,
   hasFilters,
   className,
+  children,
   ...props
 }: EmptyStateProps) => (
   <div
@@ -36,15 +42,19 @@ export const EmptyState = ({
       <SearchX />
     : <ListX />}
     <span>
-      No {entityName ?? 'results'} found
-      {textFilter ?
+      {children ?? (
         <>
-          &nbsp;for <i>"{textFilter}"</i> search
+          No {entityName ?? 'results'} found
+          {textFilter ?
+            <>
+              &nbsp;for <i>"{textFilter}"</i> search
+            </>
+          : hasFilters ?
+            <>&nbsp;for your selected filters</>
+          : null}
+          .
         </>
-      : hasFilters ?
-        <>&nbsp;for your selected filters</>
-      : null}
-      .
+      )}
     </span>
   </div>
 )
