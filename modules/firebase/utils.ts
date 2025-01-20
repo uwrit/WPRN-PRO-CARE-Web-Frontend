@@ -12,8 +12,12 @@ import {
   type CreateInvitationOutput,
   type DeleteUserInput,
   type DeleteUserOutput,
+  type DisableUserInput,
+  type DisableUserOutput,
   type DismissMessageInput,
   type DismissMessageOutput,
+  type EnableUserInput,
+  type EnableUserOutput,
   type ExportHealthSummaryInput,
   type ExportHealthSummaryOutput,
   type FHIRMedication,
@@ -297,6 +301,14 @@ export const getCallables = (functions: Functions) => ({
   defaultSeed: httpsCallable<DefaultSeedInput, DefaultSeedOutput>(
     functions,
     'defaultSeed',
+  ),
+  disableUser: httpsCallable<DisableUserInput, DisableUserOutput>(
+    functions,
+    'disableUser',
+  ),
+  enableUser: httpsCallable<EnableUserInput, EnableUserOutput>(
+    functions,
+    'enableUser',
   ),
 })
 
