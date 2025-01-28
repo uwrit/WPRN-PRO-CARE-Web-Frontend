@@ -12,3 +12,7 @@ SPDX-License-Identifier: MIT
 
 - [Paul Schmiedmayer](https://github.com/PSchmiedmayer)
 - [Vishnu Ravi](https://github.com/vishnuravi)
+
+
+# ITHS / UW Medicine Research IT
+- Josh Lovseth
