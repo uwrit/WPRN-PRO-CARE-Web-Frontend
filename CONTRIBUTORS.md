@@ -15,4 +15,4 @@ SPDX-License-Identifier: MIT
 
 
 # ITHS / UW Medicine Research IT
-- Josh Lovseth - lovseth@uw.edu
+- [Josh Lovseth](lovseth@uw.edu)
